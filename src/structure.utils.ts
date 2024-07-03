@@ -125,7 +125,7 @@ export function createEmptyStructure(
 
 export function createDefaultStructure() {
   const session = authenticateWeb(__ENV.ADMC_LOGIN, __ENV.ADMC_PASSWORD);
-  const baseUrl = `https://raw.githubusercontent.com/juniorode/edifice-k6-commons/develop/data/structure`;
+  const baseUrl = `https://raw.githubusercontent.com/edificeio/edifice-k6-commons/main/data/structure`;
   const teachersData: bytes = <bytes>(
     http.get(`${baseUrl}/enseignants.csv`).body
   );

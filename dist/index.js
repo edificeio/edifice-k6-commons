@@ -209,7 +209,7 @@ function ce(o, e, r) {
   return t;
 }
 function ae() {
-  const o = N(__ENV.ADMC_LOGIN, __ENV.ADMC_PASSWORD), e = "https://raw.githubusercontent.com/juniorode/edifice-k6-commons/develop/data/structure", r = c.get(`${e}/enseignants.csv`).body, t = c.get(`${e}/eleves.csv`).body, s = c.get(`${e}/responsables.csv`).body;
+  const o = N(__ENV.ADMC_LOGIN, __ENV.ADMC_PASSWORD), e = "https://raw.githubusercontent.com/edificeio/edifice-k6-commons/main/data/structure", r = c.get(`${e}/enseignants.csv`).body, t = c.get(`${e}/eleves.csv`).body, s = c.get(`${e}/responsables.csv`).body;
   return j(
     "General",
     {
