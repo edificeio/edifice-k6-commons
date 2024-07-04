@@ -101,3 +101,9 @@ export type WorkspaceFile = {
   owner: string;
   _id: string;
 };
+
+export type UserPosition = {
+  id: string;
+  name: string;
+  structureId: string;
+};

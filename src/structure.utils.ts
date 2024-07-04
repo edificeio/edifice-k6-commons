@@ -1,10 +1,10 @@
 import http from "k6/http";
 import { authenticateWeb, getHeaders } from "./user.utils";
-import { Role, Session, getRolesOfStructure } from ".";
+import { Role, Session, assertOk, getRolesOfStructure } from ".";
 import { check, bytes, fail } from "k6";
 //@ts-ignore
 import { FormData } from "https://jslib.k6.io/formdata/0.0.2/index.js";
-import { Structure, StructureInitData } from "./models";
+import { Structure, StructureInitData, UserPosition } from "./models";
 //@ts-ignore
 import { URL } from "https://jslib.k6.io/url/1.0.0/index.js";
 
@@ -98,6 +98,13 @@ export function linkRoleToUsers(
     }
   }
 }
+/**
+ * Creates a structure with no students, teachers or parents.
+ * @param structureName Name of the structure
+ * @param hasApp true if the structure can have the mobile app
+ * @param session Session of the user doing the creation
+ * @returns The created structure
+ */
 export function createEmptyStructure(
   structureName: string,
   hasApp: boolean,
@@ -123,7 +130,21 @@ export function createEmptyStructure(
   return structure;
 }
 
-export function createDefaultStructure() {
+/**
+ * Create a structure with a default set of teachers, parents and students
+ * and activate the users.
+ * @param structureName Name of the structure to create
+ * @returns The created structure
+ */
+export function initStructure(structureName: string) {
+  const session = authenticateWeb(__ENV.ADMC_LOGIN, __ENV.ADMC_PASSWORD)!;
+  const structure: Structure = createDefaultStructure(structureName);
+  activateUsers(structure, session);
+  return structure;
+}
+
+export function createDefaultStructure(structureName: string) {
+  const name = structureName || "General";
   const session = authenticateWeb(__ENV.ADMC_LOGIN, __ENV.ADMC_PASSWORD);
   const baseUrl = `https://raw.githubusercontent.com/edificeio/edifice-k6-commons/main/data/structure`;
   const teachersData: bytes = <bytes>(
@@ -134,7 +155,7 @@ export function createDefaultStructure() {
     http.get(`${baseUrl}/responsables.csv`).body
   );
   return createStructure(
-    "General",
+    name,
     {
       teachers: teachersData,
       students: studentsData,
@@ -266,4 +287,58 @@ export function triggerImport(session: Session) {
   const headers = getHeaders(session);
   headers["content-type"] = "application/json";
   return http.post(`${rootUrl}/directory/import`, "{}", { headers });
+}
+
+export function createPosition(
+  positionName: string,
+  structure: Structure,
+  session?: Session,
+) {
+  const headers = getHeaders(session);
+  headers["content-type"] = "application/json";
+  const payload = JSON.stringify({
+    name: positionName,
+    structureId: structure.id,
+  });
+  let res = http.post(`${rootUrl}/directory/positions`, payload, { headers });
+  return res;
+}
+
+export function createPositionOrFail(
+  positionName: string,
+  structure: Structure,
+  session: Session,
+): UserPosition {
+  const res = createPosition(positionName, structure, session);
+  if (res.status !== 201) {
+    console.error(res);
+    fail(
+      `Could not create position ${positionName} on structure ${structure.name}`,
+    );
+  }
+  return JSON.parse(<string>res.body);
+}
+
+export function searchPositions(prefix: string, session: Session) {
+  const headers = getHeaders(session);
+  const url = new URL(`${rootUrl}/directory/positions`);
+  url.searchParams.append("prefix", prefix);
+  return http.get(url.toString(), { headers });
+}
+
+export function makeAdml(user: any, structure: Structure, session: Session) {
+  const headers = getHeaders(session);
+  headers["content-type"] = "application/json";
+  const payload = JSON.stringify({
+    functionCode: "ADMIN_LOCAL",
+    inherit: "s",
+    scope: [structure.id],
+  });
+  let res = http.post(
+    `${rootUrl}/directory/user/function/${user.id}`,
+    payload,
+    { headers },
+  );
+  assertOk(res, "user should be made ADML");
+  return res;
 }

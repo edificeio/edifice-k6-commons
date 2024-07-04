@@ -6,7 +6,7 @@ const THIRTY_MINUTES_IN_SECONDS = 30 * 60;
 
 const rootUrl = __ENV.ROOT_URL;
 
-export const getHeaders = function (session: Session): {
+export const getHeaders = function (session?: Session): {
   [name: string]: string;
 } {
   let headers;
@@ -46,12 +46,12 @@ export const getConnectedUserId = function (session: Session) {
   return response.json("userId");
 };
 
-export const authenticateWeb = function (login: string, pwd: string) {
+export const authenticateWeb = function (login: string, pwd?: string) {
   const jar = http.cookieJar();
   jar.clear(rootUrl);
   let credentials = {
     email: login,
-    password: pwd,
+    password: pwd || __ENV.DEFAULT_PASSWORD,
     callBack: "",
     detail: "",
   };
