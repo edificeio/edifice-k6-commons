@@ -2,7 +2,7 @@ var T = Object.defineProperty;
 var I = (o, e, t) => e in o ? T(o, e, { enumerable: !0, configurable: !0, writable: !0, value: t }) : o[e] = t;
 var m = (o, e, t) => (I(o, typeof e != "symbol" ? e + "" : e, t), t);
 import c from "k6/http";
-import { check as u, fail as g } from "k6";
+import { check as u, fail as k } from "k6";
 import { FormData as O } from "https://jslib.k6.io/formdata/0.0.2/index.js";
 import { URL as v } from "https://jslib.k6.io/url/1.0.0/index.js";
 const h = {
@@ -28,18 +28,18 @@ class C {
     return this.cookies ? this.cookies.filter((t) => t.name === e).map((t) => t.value)[0] : null;
   }
 }
-const U = __ENV.BASE_URL, N = 30 * 60, k = __ENV.ROOT_URL, l = function(o) {
+const U = __ENV.BASE_URL, N = 30 * 60, g = __ENV.ROOT_URL, l = function(o) {
   let e;
   return o ? o.mode === h.COOKIE ? e = { "x-xsrf-token": o.getCookie("XSRF-TOKEN") || "" } : o.mode === h.OAUTH2 ? e = { Authorization: `Bearer ${o.token}` } : e = {} : e = {}, e;
 }, ee = function(o, e) {
-  const t = c.get(`${k}/conversation/visible?search=${o}`, {
+  const t = c.get(`${g}/conversation/visible?search=${o}`, {
     headers: l(e)
   });
   return u(t, {
     "should get an OK response": (s) => s.status == 200
   }), t.json("users")[0].id;
 }, oe = function(o) {
-  const e = c.get(`${k}/auth/oauth2/userinfo`, {
+  const e = c.get(`${g}/auth/oauth2/userinfo`, {
     headers: l(o)
   });
   return u(e, {
@@ -48,14 +48,14 @@ const U = __ENV.BASE_URL, N = 30 * 60, k = __ENV.ROOT_URL, l = function(o) {
   }), e.json("userId");
 }, D = function(o, e) {
   const t = c.cookieJar();
-  t.clear(k);
+  t.clear(g);
   let r = {
     email: o,
     password: e || __ENV.DEFAULT_PASSWORD,
     callBack: "",
     detail: ""
   };
-  const s = c.post(`${k}/auth/login`, r, {
+  const s = c.post(`${g}/auth/login`, r, {
     redirects: 0
   });
   if (u(s, {
@@ -63,7 +63,7 @@ const U = __ENV.BASE_URL, N = 30 * 60, k = __ENV.ROOT_URL, l = function(o) {
     "should have set an auth cookie": (a) => a.cookies.oneSessionId !== null && a.cookies.oneSessionId !== void 0
   }), !s.cookies.oneSessionId)
     return console.error(`Could not get oneSessionId for ${o}`), null;
-  t.set(k, "oneSessionId", s.cookies.oneSessionId[0].value);
+  t.set(g, "oneSessionId", s.cookies.oneSessionId[0].value);
   const n = Object.keys(s.cookies).map((a) => ({ name: a, value: s.cookies[a][0].value }));
   return new C(
     s.cookies.oneSessionId[0].value,
@@ -72,9 +72,14 @@ const U = __ENV.BASE_URL, N = 30 * 60, k = __ENV.ROOT_URL, l = function(o) {
     n
   );
 }, te = function(o) {
+  const e = c.get(`${g}/auth/login`, {
+    headers: l(o)
+  });
+  return c.cookieJar().clear(g), e;
+}, re = function(o) {
   const e = c.cookieJar();
-  return e.set(k, "oneSessionId", o.token), e.set(k, "XSRF-TOKEN", o.getCookie("XSRF-TOKEN") || ""), o;
-}, re = function(o, e, t, r) {
+  return e.set(g, "oneSessionId", o.token), e.set(g, "XSRF-TOKEN", o.getCookie("XSRF-TOKEN") || ""), o;
+}, se = function(o, e, t, r) {
   let s = {
     grant_type: "password",
     username: o,
@@ -82,7 +87,7 @@ const U = __ENV.BASE_URL, N = 30 * 60, k = __ENV.ROOT_URL, l = function(o) {
     client_id: t,
     client_secret: r,
     scope: "timeline userbook blog lvs actualites pronote schoolbook support viescolaire zimbra conversation directory homeworks userinfo workspace portal cas sso presences incidents competences diary edt infra auth"
-  }, n = c.post(`${k}/auth/oauth2/token`, s, {
+  }, n = c.post(`${g}/auth/oauth2/token`, s, {
     redirects: 0
   });
   u(n, {
@@ -105,17 +110,17 @@ function x(o, e) {
   }
   throw "cannot.find.random.user";
 }
-function se(o, e, t) {
+function ne(o, e, t) {
   const r = o.filter((s) => s.type === e);
   return x(r, t);
 }
-function ne(o, e, t) {
+function ce(o, e, t) {
   const r = {};
   r[e] = (n) => n.status === t;
   const s = u(o, r);
   return s || console.error(e, o), s;
 }
-const ce = function(o, e) {
+const ae = function(o, e) {
   const t = c.get(`${U}/metrics`, {
     headers: l(e)
   });
@@ -137,7 +142,7 @@ function y(o, e) {
     (r) => r.name === o
   )[0];
 }
-function ae(o, e) {
+function le(o, e) {
   let t = c.get(`${d}/directory/structure/${o.id}/users`, {
     headers: l(e)
   });
@@ -149,7 +154,7 @@ function F(o, e) {
   let t = c.get(`${d}/directory/structure/${o.id}/users`, {
     headers: l(e)
   });
-  t.status != 200 && g(`Cannot fetch users of structure ${o.id} : ${t}`);
+  t.status != 200 && k(`Cannot fetch users of structure ${o.id} : ${t}`);
   const r = JSON.parse(t.body);
   for (let s = 0; s < r.length; s++) {
     const n = r[s];
@@ -164,12 +169,12 @@ function L(o) {
       redirects: 0,
       headers: { Host: J }
     });
-    t.status !== 302 && (console.error(t), g(
+    t.status !== 302 && (console.error(t), k(
       `Could not activate user ${o.login} : ${t.status} - ${t.body}`
     ));
   }
 }
-function le(o, e, t, r) {
+function ie(o, e, t, r) {
   const n = A(o.id, r).filter(
     (a) => t.indexOf(a.name) >= 0
   );
@@ -192,7 +197,7 @@ function le(o, e, t, r) {
       });
     }
 }
-function ie(o, e, t) {
+function pe(o, e, t) {
   let r = y(o, t);
   if (r)
     console.log(`Structure ${o} already exists`);
@@ -204,11 +209,11 @@ function ie(o, e, t) {
       name: o
     });
     let a = c.post(`${d}/directory/school`, n, s);
-    a.status !== 201 && (console.error(a.body), g(`Could not create structure ${o}`)), r = y(o, t);
+    a.status !== 201 && (console.error(a.body), k(`Could not create structure ${o}`)), r = y(o, t);
   }
   return r;
 }
-function pe(o) {
+function ue(o) {
   const e = D(__ENV.ADMC_LOGIN, __ENV.ADMC_PASSWORD), t = j(o);
   return F(t, e), t;
 }
@@ -240,11 +245,11 @@ function P(o, e, t) {
       `${d}/directory/wizard/import`,
       s.body(),
       p
-    ).status != 200 && g(`Could not create structure ${o}`), r = y(o, t);
+    ).status != 200 && k(`Could not create structure ${o}`), r = y(o, t);
   }
   return r;
 }
-function ue(o, e, t) {
+function de(o, e, t) {
   let r;
   if ((e.parents || []).map((n) => n.id).indexOf(o.id) >= 0)
     console.log(
@@ -255,13 +260,13 @@ function ue(o, e, t) {
     n["content-type"] = "application/json", c.put(
       `${d}/directory/structure/${e.id}/parent/${o.id}`,
       "{}"
-    ).status !== 200 && g(
+    ).status !== 200 && k(
       `Could not attach structure ${e.name} as a child of ${o.name}`
     ), r = !0;
   }
   return r;
 }
-function de(o, e, t) {
+function fe(o, e, t) {
   const r = new O();
   r.append("type", "CSV"), r.append("structureName", o.name), r.append("structureId", o.id), r.append("structureExternalId", o.externalId);
   let s, n, a;
@@ -275,7 +280,7 @@ function de(o, e, t) {
     f
   );
 }
-function fe(o) {
+function ge(o) {
   const e = l(o);
   return e["content-type"] = "application/json", c.post(`${d}/directory/import`, "{}", { headers: e });
 }
@@ -288,17 +293,17 @@ function V(o, e, t) {
   });
   return c.post(`${d}/directory/positions`, s, { headers: r });
 }
-function ge(o, e, t) {
+function ke(o, e, t) {
   const r = V(o, e, t);
-  return r.status !== 201 && (console.error(r), g(
+  return r.status !== 201 && (console.error(r), k(
     `Could not create position ${o} on structure ${e.name}`
   )), JSON.parse(r.body);
 }
-function ke(o, e) {
+function me(o, e) {
   const t = l(e), r = new v(`${d}/directory/positions`);
   return r.searchParams.append("prefix", o), c.get(r.toString(), { headers: t });
 }
-function me(o, e, t) {
+function he(o, e, t) {
   const r = l(t);
   r["content-type"] = "application/json";
   const s = JSON.stringify({
@@ -320,7 +325,7 @@ function R(o, e) {
   });
   return JSON.parse(t.body).filter((s) => s.name === o)[0];
 }
-function he(o, e) {
+function ye(o, e) {
   const t = `${o} - All - Stress Test`;
   let r = R(t, e);
   if (r)
@@ -356,7 +361,7 @@ function A(o, e) {
     "get structure roles should be ok": (s) => s.status == 200
   }), JSON.parse(r.body);
 }
-const G = __ENV.ROOT_URL, ye = [
+const G = __ENV.ROOT_URL, $e = [
   "org-entcore-workspace-controllers-WorkspaceController|getDocument",
   "org-entcore-workspace-controllers-WorkspaceController|copyDocuments",
   "org-entcore-workspace-controllers-WorkspaceController|getDocumentProperties",
@@ -388,7 +393,7 @@ const G = __ENV.ROOT_URL, ye = [
   "org-entcore-workspace-controllers-WorkspaceController|renameDocument",
   "org-entcore-workspace-controllers-WorkspaceController|moveDocuments",
   "org-entcore-workspace-controllers-WorkspaceController|updateDocument"
-], $e = [
+], we = [
   "org-entcore-workspace-controllers-WorkspaceController|getDocument",
   "org-entcore-workspace-controllers-WorkspaceController|copyDocuments",
   "org-entcore-workspace-controllers-WorkspaceController|getDocumentProperties",
@@ -401,7 +406,7 @@ const G = __ENV.ROOT_URL, ye = [
   "org-entcore-workspace-controllers-WorkspaceController|commentFolder",
   "org-entcore-workspace-controllers-WorkspaceController|commentDocument"
 ];
-function we(o, e) {
+function Ce(o, e) {
   let t = l(e);
   const r = new O();
   r.append("file", c.file(o, "file.txt")), t["Content-Type"] = "multipart/form-data; boundary=" + r.boundary;
@@ -411,7 +416,7 @@ function we(o, e) {
   }), JSON.parse(s.body);
 }
 const B = __ENV.ROOT_URL;
-function Ce(o, e, t) {
+function Oe(o, e, t) {
   const r = l(t);
   r["content-type"] = "application/json";
   const s = JSON.stringify(e);
@@ -420,7 +425,7 @@ function Ce(o, e, t) {
   });
 }
 const M = __ENV.ROOT_URL;
-function Oe(o, e, t) {
+function Se(o, e, t) {
   const r = c.post(
     `${M}/communication/v2/group/${o}/communique/${e}`,
     "{}",
@@ -428,10 +433,10 @@ function Oe(o, e, t) {
   );
   return r.status !== 200 && (console.error(
     `Error while adding communication between ${o} -> ${e}`
-  ), console.error(r), g(`could not add communication between ${o} -> ${e}`)), r;
+  ), console.error(r), k(`could not add communication between ${o} -> ${e}`)), r;
 }
 const w = __ENV.ROOT_URL;
-function Se(o, e, t) {
+function _e(o, e, t) {
   let r = W(o, e, t);
   if (r)
     console.log("Broadcast group already existed");
@@ -470,16 +475,16 @@ function K(o, e, t) {
       "{}",
       { headers: r }
     );
-    n.status !== 200 && (console.error(n), g(`Cannot open comm rule from ${s} to ${o}`));
+    n.status !== 200 && (console.error(n), k(`Cannot open comm rule from ${s} to ${o}`));
   }
 }
 function H(o, e) {
   return S("teachers", o, e);
 }
-function _e(o, e) {
+function be(o, e) {
   return S("students", o, e);
 }
-function be(o, e) {
+function Re(o, e) {
   return S("relatives", o, e);
 }
 function S(o, e, t) {
@@ -501,57 +506,58 @@ function W(o, e, t) {
 }
 function z(o, e, t = 200) {
   const r = t || 200;
-  o.status != r && (console.error(`ko - ${e}. Expecting ${r} but got ${o.status}`), console.error(o), g(e + " ko"));
+  o.status != r && (console.error(`ko - ${e}. Expecting ${r} but got ${o.status}`), console.error(o), k(e + " ko"));
 }
-function Re(o, e) {
+function We(o, e) {
   const t = {};
-  t[e] = () => o, u({}, t) || g(e);
+  t[e] = () => o, u({}, t) || k(e);
 }
 export {
   U as BASE_URL,
   C as Session,
   h as SessionMode,
-  ye as WS_MANAGER_SHARE,
-  $e as WS_READER_SHARE,
+  $e as WS_MANAGER_SHARE,
+  we as WS_READER_SHARE,
   L as activateUser,
   F as activateUsers,
   K as addCommRuleToGroup,
-  Oe as addCommunicationBetweenGroups,
-  Re as assertCondition,
+  Se as addCommunicationBetweenGroups,
+  We as assertCondition,
   z as assertOk,
-  ue as attachStructureAsChild,
-  re as authenticateOAuth2,
+  de as attachStructureAsChild,
+  se as authenticateOAuth2,
   D as authenticateWeb,
-  ne as checkStatus,
-  he as createAndSetRole,
-  Se as createBroadcastGroup,
+  ce as checkStatus,
+  ye as createAndSetRole,
+  _e as createBroadcastGroup,
   j as createDefaultStructure,
-  ie as createEmptyStructure,
+  pe as createEmptyStructure,
   V as createPosition,
-  ge as createPositionOrFail,
+  ke as createPositionOrFail,
   P as createStructure,
   W as getBroadcastGroup,
   oe as getConnectedUserId,
   l as getHeaders,
-  ce as getMetricValue,
-  be as getParentRole,
+  ae as getMetricValue,
+  Re as getParentRole,
   S as getProfileGroupOfStructure,
   x as getRandomUser,
-  se as getRandomUserWithProfile,
+  ne as getRandomUserWithProfile,
   R as getRoleByName,
   A as getRolesOfStructure,
   y as getSchoolByName,
-  _e as getStudentRole,
+  be as getStudentRole,
   H as getTeacherRole,
-  ae as getUsersOfSchool,
-  de as importUsers,
-  pe as initStructure,
-  le as linkRoleToUsers,
-  me as makeAdml,
-  ke as searchPositions,
+  le as getUsersOfSchool,
+  fe as importUsers,
+  ue as initStructure,
+  ie as linkRoleToUsers,
+  te as logout,
+  he as makeAdml,
+  me as searchPositions,
   ee as searchUser,
-  Ce as shareFile,
-  te as switchSession,
-  fe as triggerImport,
-  we as uploadFile
+  Oe as shareFile,
+  re as switchSession,
+  ge as triggerImport,
+  Ce as uploadFile
 };

@@ -81,6 +81,14 @@ export const authenticateWeb = function (login: string, pwd?: string) {
   );
 };
 
+export const logout = function (session: Session) {
+  const res = http.get(`${rootUrl}/auth/login`, {
+    headers: getHeaders(session),
+  });
+  http.cookieJar().clear(rootUrl);
+  return res;
+};
+
 export const switchSession = function (session: Session): Session {
   const jar = http.cookieJar();
   jar.set(rootUrl, "oneSessionId", session.token);
