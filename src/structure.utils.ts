@@ -304,6 +304,15 @@ export function createPosition(
   return res;
 }
 
+export function deletePosition(positionId: string, session?: Session) {
+  const headers = getHeaders(session);
+  headers["content-type"] = "application/json";
+  let res = http.del(`${rootUrl}/directory/positions/${positionId}`, null, {
+    headers,
+  });
+  return res;
+}
+
 export function createPositionOrFail(
   positionName: string,
   structure: Structure,
