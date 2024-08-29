@@ -82,11 +82,12 @@ export const authenticateWeb = function (login: string, pwd?: string) {
 };
 
 export const logout = function (session: Session) {
-  const res = http.get(`${rootUrl}/auth/login`, {
+  /*const res = http.get(`${rootUrl}/auth/logout?callback=/`, {
     headers: getHeaders(session),
-  });
+  });*/
+  console.log("Removing session", session);
   http.cookieJar().clear(rootUrl);
-  return res;
+  //return res;
 };
 
 export const switchSession = function (session: Session): Session {

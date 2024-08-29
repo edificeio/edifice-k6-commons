@@ -2,9 +2,9 @@ var T = Object.defineProperty;
 var I = (o, e, t) => e in o ? T(o, e, { enumerable: !0, configurable: !0, writable: !0, value: t }) : o[e] = t;
 var m = (o, e, t) => (I(o, typeof e != "symbol" ? e + "" : e, t), t);
 import c from "k6/http";
-import { check as d, fail as k } from "k6";
+import { check as d, fail as g } from "k6";
 import { FormData as O } from "https://jslib.k6.io/formdata/0.0.2/index.js";
-import { URL as v } from "https://jslib.k6.io/url/1.0.0/index.js";
+import { URL as W } from "https://jslib.k6.io/url/1.0.0/index.js";
 const h = {
   COOKIE: 0,
   OAUTH2: 1
@@ -28,18 +28,18 @@ class C {
     return this.cookies ? this.cookies.filter((t) => t.name === e).map((t) => t.value)[0] : null;
   }
 }
-const U = __ENV.BASE_URL, N = 30 * 60, g = __ENV.ROOT_URL, l = function(o) {
+const U = __ENV.BASE_URL, N = 30 * 60, k = __ENV.ROOT_URL, l = function(o) {
   let e;
   return o ? o.mode === h.COOKIE ? e = { "x-xsrf-token": o.getCookie("XSRF-TOKEN") || "" } : o.mode === h.OAUTH2 ? e = { Authorization: `Bearer ${o.token}` } : e = {} : e = {}, e;
 }, ee = function(o, e) {
-  const t = c.get(`${g}/conversation/visible?search=${o}`, {
+  const t = c.get(`${k}/conversation/visible?search=${o}`, {
     headers: l(e)
   });
   return d(t, {
     "should get an OK response": (s) => s.status == 200
   }), t.json("users")[0].id;
 }, oe = function(o) {
-  const e = c.get(`${g}/auth/oauth2/userinfo`, {
+  const e = c.get(`${k}/auth/oauth2/userinfo`, {
     headers: l(o)
   });
   return d(e, {
@@ -48,14 +48,14 @@ const U = __ENV.BASE_URL, N = 30 * 60, g = __ENV.ROOT_URL, l = function(o) {
   }), e.json("userId");
 }, D = function(o, e) {
   const t = c.cookieJar();
-  t.clear(g);
+  t.clear(k);
   let r = {
     email: o,
     password: e || __ENV.DEFAULT_PASSWORD,
     callBack: "",
     detail: ""
   };
-  const s = c.post(`${g}/auth/login`, r, {
+  const s = c.post(`${k}/auth/login`, r, {
     redirects: 0
   });
   if (d(s, {
@@ -63,7 +63,7 @@ const U = __ENV.BASE_URL, N = 30 * 60, g = __ENV.ROOT_URL, l = function(o) {
     "should have set an auth cookie": (a) => a.cookies.oneSessionId !== null && a.cookies.oneSessionId !== void 0
   }), !s.cookies.oneSessionId)
     return console.error(`Could not get oneSessionId for ${o}`), null;
-  t.set(g, "oneSessionId", s.cookies.oneSessionId[0].value);
+  t.set(k, "oneSessionId", s.cookies.oneSessionId[0].value);
   const n = Object.keys(s.cookies).map((a) => ({ name: a, value: s.cookies[a][0].value }));
   return new C(
     s.cookies.oneSessionId[0].value,
@@ -72,13 +72,10 @@ const U = __ENV.BASE_URL, N = 30 * 60, g = __ENV.ROOT_URL, l = function(o) {
     n
   );
 }, te = function(o) {
-  const e = c.get(`${g}/auth/login`, {
-    headers: l(o)
-  });
-  return c.cookieJar().clear(g), e;
+  console.log("Removing session", o), c.cookieJar().clear(k);
 }, re = function(o) {
   const e = c.cookieJar();
-  return e.set(g, "oneSessionId", o.token), e.set(g, "XSRF-TOKEN", o.getCookie("XSRF-TOKEN") || ""), o;
+  return e.set(k, "oneSessionId", o.token), e.set(k, "XSRF-TOKEN", o.getCookie("XSRF-TOKEN") || ""), o;
 }, se = function(o, e, t, r) {
   let s = {
     grant_type: "password",
@@ -87,7 +84,7 @@ const U = __ENV.BASE_URL, N = 30 * 60, g = __ENV.ROOT_URL, l = function(o) {
     client_id: t,
     client_secret: r,
     scope: "timeline userbook blog lvs actualites pronote schoolbook support viescolaire zimbra conversation directory homeworks userinfo workspace portal cas sso presences incidents competences diary edt infra auth"
-  }, n = c.post(`${g}/auth/oauth2/token`, s, {
+  }, n = c.post(`${k}/auth/oauth2/token`, s, {
     redirects: 0
   });
   d(n, {
@@ -133,7 +130,7 @@ const ae = function(o, e) {
     if (s.indexOf(`${o} `) === 0)
       return parseFloat(s.substring(o.length + 1).trim());
   return console.error("Metric", o, "not found"), null;
-}, u = __ENV.ROOT_URL, J = new v(u).hostname, b = __ENV.DEFAULT_PASSWORD || "password";
+}, u = __ENV.ROOT_URL, J = new W(u).hostname, b = __ENV.DEFAULT_PASSWORD || "password";
 function y(o, e) {
   let t = c.get(`${u}/directory/structure/admin/list`, {
     headers: l(e)
@@ -154,7 +151,7 @@ function F(o, e) {
   let t = c.get(`${u}/directory/structure/${o.id}/users`, {
     headers: l(e)
   });
-  t.status != 200 && k(`Cannot fetch users of structure ${o.id} : ${t}`);
+  t.status != 200 && g(`Cannot fetch users of structure ${o.id} : ${t}`);
   const r = JSON.parse(t.body);
   for (let s = 0; s < r.length; s++) {
     const n = r[s];
@@ -169,7 +166,7 @@ function L(o) {
       redirects: 0,
       headers: { Host: J }
     });
-    t.status !== 302 && (console.error(t), k(
+    t.status !== 302 && (console.error(t), g(
       `Could not activate user ${o.login} : ${t.status} - ${t.body}`
     ));
   }
@@ -209,7 +206,7 @@ function pe(o, e, t) {
       name: o
     });
     let a = c.post(`${u}/directory/school`, n, s);
-    a.status !== 201 && (console.error(a.body), k(`Could not create structure ${o}`)), r = y(o, t);
+    a.status !== 201 && (console.error(a.body), g(`Could not create structure ${o}`)), r = y(o, t);
   }
   return r;
 }
@@ -245,7 +242,7 @@ function P(o, e, t) {
       `${u}/directory/wizard/import`,
       s.body(),
       p
-    ).status != 200 && k(`Could not create structure ${o}`), r = y(o, t);
+    ).status != 200 && g(`Could not create structure ${o}`), r = y(o, t);
   }
   return r;
 }
@@ -260,7 +257,7 @@ function de(o, e, t) {
     n["content-type"] = "application/json", c.put(
       `${u}/directory/structure/${e.id}/parent/${o.id}`,
       "{}"
-    ).status !== 200 && k(
+    ).status !== 200 && g(
       `Could not attach structure ${e.name} as a child of ${o.name}`
     ), r = !0;
   }
@@ -301,12 +298,12 @@ function ke(o, e) {
 }
 function me(o, e, t) {
   const r = V(o, e, t);
-  return r.status !== 201 && (console.error(r), k(
+  return r.status !== 201 && (console.error(r), g(
     `Could not create position ${o} on structure ${e.name}`
   )), JSON.parse(r.body);
 }
 function he(o, e) {
-  const t = l(e), r = new v(`${u}/directory/positions`);
+  const t = l(e), r = new W(`${u}/directory/positions`);
   return r.searchParams.append("prefix", o), c.get(r.toString(), { headers: t });
 }
 function ye(o, e, t) {
@@ -439,11 +436,11 @@ function _e(o, e, t) {
   );
   return r.status !== 200 && (console.error(
     `Error while adding communication between ${o} -> ${e}`
-  ), console.error(r), k(`could not add communication between ${o} -> ${e}`)), r;
+  ), console.error(r), g(`could not add communication between ${o} -> ${e}`)), r;
 }
 const w = __ENV.ROOT_URL;
 function be(o, e, t) {
-  let r = W(o, e, t);
+  let r = v(o, e, t);
   if (r)
     console.log("Broadcast group already existed");
   else {
@@ -468,7 +465,7 @@ function be(o, e, t) {
       "set broadcast group for teachers": (p) => p.status === 200
     });
     const f = H(e, t).id;
-    K(i, [f], t), r = W(o, e, t);
+    K(i, [f], t), r = v(o, e, t);
   }
   return r;
 }
@@ -481,7 +478,7 @@ function K(o, e, t) {
       "{}",
       { headers: r }
     );
-    n.status !== 200 && (console.error(n), k(`Cannot open comm rule from ${s} to ${o}`));
+    n.status !== 200 && (console.error(n), g(`Cannot open comm rule from ${s} to ${o}`));
   }
 }
 function H(o, e) {
@@ -490,7 +487,7 @@ function H(o, e) {
 function Re(o, e) {
   return S("students", o, e);
 }
-function We(o, e) {
+function ve(o, e) {
   return S("relatives", o, e);
 }
 function S(o, e, t) {
@@ -499,7 +496,7 @@ function S(o, e, t) {
     return n === `${e.name} group ${o}.`.toLowerCase() || n === `${o} from group ${e.name}.`.toLowerCase();
   })[0];
 }
-function W(o, e, t) {
+function v(o, e, t) {
   const r = l(t);
   r["content-type"] = "application/json";
   let s = c.get(
@@ -512,11 +509,11 @@ function W(o, e, t) {
 }
 function z(o, e, t = 200) {
   const r = t || 200;
-  o.status != r && (console.error(`ko - ${e}. Expecting ${r} but got ${o.status}`), console.error(o), k(e + " ko"));
+  o.status != r && (console.error(`ko - ${e}. Expecting ${r} but got ${o.status}`), console.error(o), g(e + " ko"));
 }
-function ve(o, e) {
+function We(o, e) {
   const t = {};
-  t[e] = () => o, d({}, t) || k(e);
+  t[e] = () => o, d({}, t) || g(e);
 }
 export {
   U as BASE_URL,
@@ -528,7 +525,7 @@ export {
   F as activateUsers,
   K as addCommRuleToGroup,
   _e as addCommunicationBetweenGroups,
-  ve as assertCondition,
+  We as assertCondition,
   z as assertOk,
   de as attachStructureAsChild,
   se as authenticateOAuth2,
@@ -542,11 +539,11 @@ export {
   me as createPositionOrFail,
   P as createStructure,
   ke as deletePosition,
-  W as getBroadcastGroup,
+  v as getBroadcastGroup,
   oe as getConnectedUserId,
   l as getHeaders,
   ae as getMetricValue,
-  We as getParentRole,
+  ve as getParentRole,
   S as getProfileGroupOfStructure,
   x as getRandomUser,
   ne as getRandomUserWithProfile,
