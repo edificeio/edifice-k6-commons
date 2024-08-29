@@ -300,7 +300,10 @@ export function createPosition(
     name: positionName,
     structureId: structure.id,
   });
-  let res = http.post(`${rootUrl}/directory/positions`, payload, { headers });
+  let res = http.post(`${rootUrl}/directory/positions`, payload, {
+    redirects: 0,
+    headers,
+  });
   return res;
 }
 
@@ -308,6 +311,7 @@ export function deletePosition(positionId: string, session?: Session) {
   const headers = getHeaders(session);
   headers["content-type"] = "application/json";
   let res = http.del(`${rootUrl}/directory/positions/${positionId}`, null, {
+    redirects: 0,
     headers,
   });
   return res;

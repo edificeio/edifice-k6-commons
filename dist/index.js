@@ -288,11 +288,15 @@ function V(o, e, t) {
     name: o,
     structureId: e.id
   });
-  return c.post(`${u}/directory/positions`, s, { headers: r });
+  return c.post(`${u}/directory/positions`, s, {
+    redirects: 0,
+    headers: r
+  });
 }
 function ke(o, e) {
   const t = l(e);
   return t["content-type"] = "application/json", c.del(`${u}/directory/positions/${o}`, null, {
+    redirects: 0,
     headers: t
   });
 }
