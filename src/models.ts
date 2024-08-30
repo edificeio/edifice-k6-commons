@@ -139,5 +139,6 @@ export type UserInfo = {
   firstName: string;
   lastName: string;
   source: string;
-  profile: string;
 };
+
+export type StructureFlavour = "default" | "tiny";

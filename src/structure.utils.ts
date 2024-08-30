@@ -19,6 +19,7 @@ import { FormData } from "https://jslib.k6.io/formdata/0.0.2/index.js";
 import {
   ProfileGroup,
   Structure,
+  StructureFlavour,
   StructureInitData,
   UserInfo,
   UserPosition,
@@ -155,23 +156,31 @@ export function createEmptyStructure(
  * @param structureName Name of the structure to create
  * @returns The created structure
  */
-export function initStructure(structureName: string) {
+export function initStructure(
+  structureName: string,
+  flavour: StructureFlavour = "default",
+) {
   const session = authenticateWeb(__ENV.ADMC_LOGIN, __ENV.ADMC_PASSWORD)!;
-  const structure: Structure = createDefaultStructure(structureName);
+  const structure: Structure = createDefaultStructure(structureName, flavour);
   activateUsers(structure, session);
   return structure;
 }
 
-export function createDefaultStructure(structureName: string) {
+export function createDefaultStructure(
+  structureName: string,
+  flavour: StructureFlavour = "default",
+) {
   const name = structureName || "General";
   const session = authenticateWeb(__ENV.ADMC_LOGIN, __ENV.ADMC_PASSWORD);
-  const baseUrl = `https://raw.githubusercontent.com/edificeio/edifice-k6-commons/main/data/structure`;
+  const baseUrl = `https://raw.githubusercontent.com/edificeio/edifice-k6-commons/develop/data/structure`;
   const teachersData: bytes = <bytes>(
-    http.get(`${baseUrl}/enseignants.csv`).body
+    http.get(`${baseUrl}/enseignants.${flavour}.csv`).body
   );
-  const studentsData: bytes = <bytes>http.get(`${baseUrl}/eleves.csv`).body;
+  const studentsData: bytes = <bytes>(
+    http.get(`${baseUrl}/eleves.${flavour}.csv`).body
+  );
   const responsablesData: bytes = <bytes>(
-    http.get(`${baseUrl}/responsables.csv`).body
+    http.get(`${baseUrl}/responsables.${flavour}.csv`).body
   );
   return createStructure(
     name,
@@ -383,6 +392,7 @@ export function makeAdml(user: any, structure: Structure, session: Session) {
  * @param structure Structure to attach the ADML to
  * @param profile Profile of the users that should be ADML or undefined if every profile types is ok
  * @param nbAdmls The number of ADML we want
+ * @param excludedUsers List of users that should not be in the list of ADMLsreturned by this function
  * @param session Session of the requester
  * @returns A list o nbAdmls users of the structure
  */
@@ -390,6 +400,7 @@ export function getAdmlsOrMakThem(
   structure: Structure,
   profile: string,
   nbAdmls: number,
+  excludedUsers: { id: string }[],
   session: Session,
 ) {
   const profileGroups: ProfileGroup[] = getProfileGroupsOfStructure(
@@ -399,10 +410,22 @@ export function getAdmlsOrMakThem(
   const admlGroup: ProfileGroup = profileGroups.filter(
     (pg) => pg.filter === ADML_FILTER,
   )[0];
-  const existingAdmlUsers: UserInfo[] = getUsersOfGroup(admlGroup.id, session);
-  const admlUsers: UserInfo[] = profile
-    ? existingAdmlUsers.filter((u) => u.profile === profile)
-    : existingAdmlUsers;
+  let admlUsers: UserInfo[];
+  if (admlGroup) {
+    const existingAdmlUsers: UserInfo[] = getUsersOfGroup(
+      admlGroup.id,
+      session,
+    );
+    admlUsers = profile
+      ? existingAdmlUsers.filter((u) => u.type === profile)
+      : existingAdmlUsers;
+  } else {
+    admlUsers = [];
+  }
+  if (excludedUsers && excludedUsers.length > 0) {
+    const excludedIds = excludedUsers.map((u) => u.id);
+    admlUsers = admlUsers.filter((u) => excludedIds.indexOf(u.id) < 0);
+  }
   if (admlUsers.length < nbAdmls) {
     const usersOfStructure = getUsersOfSchool(structure, session);
     for (let i = admlUsers.length; i < nbAdmls; i++) {
