@@ -1,5 +1,8 @@
 import { bytes } from "k6";
-
+export type IdAndName = {
+  id: string;
+  name: string;
+};
 export type Notification = {
   _id: string;
   type: string;
@@ -106,4 +109,13 @@ export type UserPosition = {
   id: string;
   name: string;
   structureId: string;
+};
+
+export type UserbookSearchCriteria = {
+  structures: IdAndName[];
+  classes: IdAndName[];
+  functions: string[];
+  profiles: string[];
+  groupTypes: string[];
+  positions: UserPosition[];
 };
