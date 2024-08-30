@@ -1,12 +1,31 @@
 import http from "k6/http";
-import { authenticateWeb, getHeaders } from "./user.utils";
-import { Role, Session, assertOk, getRolesOfStructure } from ".";
+import {
+  authenticateWeb,
+  getHeaders,
+  getRandomUser,
+  getRandomUserWithProfile,
+} from "./user.utils";
+import {
+  ADML_FILTER,
+  Role,
+  Session,
+  assertOk,
+  getRolesOfStructure,
+  getUsersOfGroup,
+} from ".";
 import { check, bytes, fail } from "k6";
 //@ts-ignore
 import { FormData } from "https://jslib.k6.io/formdata/0.0.2/index.js";
-import { Structure, StructureInitData, UserPosition } from "./models";
+import {
+  ProfileGroup,
+  Structure,
+  StructureInitData,
+  UserInfo,
+  UserPosition,
+} from "./models";
 //@ts-ignore
 import { URL } from "https://jslib.k6.io/url/1.0.0/index.js";
+import { getProfileGroupsOfStructure } from "./group.utils";
 
 const rootUrl = __ENV.ROOT_URL;
 const host = new URL(rootUrl).hostname;
@@ -354,4 +373,53 @@ export function makeAdml(user: any, structure: Structure, session: Session) {
   );
   assertOk(res, "user should be made ADML");
   return res;
+}
+
+/**
+ * Search nbAdmls ADML of the structure. If less than nbAdmls ADML are
+ * found, the remainder is created from existing users of the structure
+ * who have the specified profile (if one is specified, otherwise we just
+ * use any users).
+ * @param structure Structure to attach the ADML to
+ * @param profile Profile of the users that should be ADML or undefined if every profile types is ok
+ * @param nbAdmls The number of ADML we want
+ * @param session Session of the requester
+ * @returns A list o nbAdmls users of the structure
+ */
+export function getAdmlsOrMakThem(
+  structure: Structure,
+  profile: string,
+  nbAdmls: number,
+  session: Session,
+) {
+  const profileGroups: ProfileGroup[] = getProfileGroupsOfStructure(
+    structure.id,
+    session,
+  );
+  const admlGroup: ProfileGroup = profileGroups.filter(
+    (pg) => pg.filter === ADML_FILTER,
+  )[0];
+  const existingAdmlUsers: UserInfo[] = getUsersOfGroup(admlGroup.id, session);
+  const admlUsers: UserInfo[] = profile
+    ? existingAdmlUsers.filter((u) => u.profile === profile)
+    : existingAdmlUsers;
+  if (admlUsers.length < nbAdmls) {
+    const usersOfStructure = getUsersOfSchool(structure, session);
+    for (let i = admlUsers.length; i < nbAdmls; i++) {
+      let userToMake: UserInfo;
+      if (profile) {
+        userToMake = <UserInfo>(
+          getRandomUserWithProfile(usersOfStructure, profile, admlUsers)
+        );
+      } else {
+        userToMake = <UserInfo>getRandomUser(usersOfStructure, admlUsers);
+      }
+      console.log(
+        `Turning ${userToMake.login} into an ADML of ${structure.id} - ${structure.name}`,
+      );
+      makeAdml(userToMake, structure, session);
+      admlUsers.push(userToMake);
+    }
+  }
+  return admlUsers.slice(0, nbAdmls);
 }

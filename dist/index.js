@@ -1,24 +1,24 @@
-var T = Object.defineProperty;
-var U = (o, e, t) => e in o ? T(o, e, { enumerable: !0, configurable: !0, writable: !0, value: t }) : o[e] = t;
-var m = (o, e, t) => (U(o, typeof e != "symbol" ? e + "" : e, t), t);
+var E = Object.defineProperty;
+var I = (o, e, t) => e in o ? E(o, e, { enumerable: !0, configurable: !0, writable: !0, value: t }) : o[e] = t;
+var y = (o, e, t) => (I(o, typeof e != "symbol" ? e + "" : e, t), t);
 import c from "k6/http";
 import { check as d, fail as g } from "k6";
-import { FormData as O } from "https://jslib.k6.io/formdata/0.0.2/index.js";
+import { FormData as S } from "https://jslib.k6.io/formdata/0.0.2/index.js";
 import { URL as W } from "https://jslib.k6.io/url/1.0.0/index.js";
-const h = {
+const $ = {
   COOKIE: 0,
   OAUTH2: 1
 };
-class C {
+class O {
   constructor(e, t, r, s) {
-    m(this, "expiresAt");
-    m(this, "token");
-    m(this, "mode");
-    m(this, "cookies");
+    y(this, "expiresAt");
+    y(this, "token");
+    y(this, "mode");
+    y(this, "cookies");
     this.token = e, this.mode = t, this.cookies = s, this.expiresAt = Date.now() + r * 1e3 - 3e3;
   }
   static from(e) {
-    const t = new C(e.token, e.mode, 0, e.cookies);
+    const t = new O(e.token, e.mode, 0, e.cookies);
     return t.expiresAt = e.expiresAt, t;
   }
   isExpired() {
@@ -28,17 +28,17 @@ class C {
     return this.cookies ? this.cookies.filter((t) => t.name === e).map((t) => t.value)[0] : null;
   }
 }
-const I = __ENV.BASE_URL, N = 30 * 60, k = __ENV.ROOT_URL, l = function(o) {
+const N = __ENV.BASE_URL, J = 30 * 60, k = __ENV.ROOT_URL, l = function(o) {
   let e;
-  return o ? o.mode === h.COOKIE ? e = { "x-xsrf-token": o.getCookie("XSRF-TOKEN") || "" } : o.mode === h.OAUTH2 ? e = { Authorization: `Bearer ${o.token}` } : e = {} : e = {}, e;
-}, oe = function(o, e) {
+  return o ? o.mode === $.COOKIE ? e = { "x-xsrf-token": o.getCookie("XSRF-TOKEN") || "" } : o.mode === $.OAUTH2 ? e = { Authorization: `Bearer ${o.token}` } : e = {} : e = {}, e;
+}, ae = function(o, e) {
   const t = c.get(`${k}/conversation/visible?search=${o}`, {
     headers: l(e)
   });
   return d(t, {
     "should get an OK response": (s) => s.status == 200
   }), t.json("users")[0].id;
-}, te = function(o) {
+}, le = function(o) {
   const e = c.get(`${k}/auth/oauth2/userinfo`, {
     headers: l(o)
   });
@@ -46,7 +46,7 @@ const I = __ENV.BASE_URL, N = 30 * 60, k = __ENV.ROOT_URL, l = function(o) {
     "should get an OK response": (t) => t.status == 200,
     "should get a valid userId": (t) => !!t.json("userId")
   }), e.json("userId");
-}, D = function(o, e) {
+}, A = function(o, e) {
   const t = c.cookieJar();
   t.clear(k);
   let r = {
@@ -65,18 +65,18 @@ const I = __ENV.BASE_URL, N = 30 * 60, k = __ENV.ROOT_URL, l = function(o) {
     return console.error(`Could not get oneSessionId for ${o}`), null;
   t.set(k, "oneSessionId", s.cookies.oneSessionId[0].value);
   const n = Object.keys(s.cookies).map((a) => ({ name: a, value: s.cookies[a][0].value }));
-  return new C(
+  return new O(
     s.cookies.oneSessionId[0].value,
-    h.COOKIE,
-    N,
+    $.COOKIE,
+    J,
     n
   );
-}, re = function(o) {
+}, ie = function(o) {
   console.log("Removing session", o), c.cookieJar().clear(k);
-}, se = function(o) {
+}, pe = function(o) {
   const e = c.cookieJar();
   return e.set(k, "oneSessionId", o.token), e.set(k, "XSRF-TOKEN", o.getCookie("XSRF-TOKEN") || ""), o;
-}, ne = function(o, e, t, r) {
+}, ue = function(o, e, t, r) {
   let s = {
     grant_type: "password",
     username: o,
@@ -92,13 +92,13 @@ const I = __ENV.BASE_URL, N = 30 * 60, k = __ENV.ROOT_URL, l = function(o) {
     "should have set an access token": (i) => !!i.json("access_token")
   });
   const a = n.json("access_token");
-  return new C(
+  return new O(
     a,
-    h.OAUTH2,
+    $.OAUTH2,
     n.json("expires_in")
   );
 };
-function x(o, e) {
+function D(o, e) {
   const t = (e || []).map((r) => r.id);
   for (let r = 0; r < 1e3; r++) {
     const s = o[Math.floor(Math.random() * o.length)];
@@ -107,18 +107,18 @@ function x(o, e) {
   }
   throw "cannot.find.random.user";
 }
-function ce(o, e, t) {
+function x(o, e, t) {
   const r = o.filter((s) => s.type === e);
-  return x(r, t);
+  return D(r, t);
 }
-function ae(o, e, t) {
+function de(o, e, t) {
   const r = {};
   r[e] = (n) => n.status === t;
   const s = d(o, r);
   return s || console.error(e, o), s;
 }
-const le = function(o, e) {
-  const t = c.get(`${I}/metrics`, {
+const fe = function(o, e) {
+  const t = c.get(`${N}/metrics`, {
     headers: l(e)
   });
   d(t, {
@@ -130,49 +130,138 @@ const le = function(o, e) {
     if (s.indexOf(`${o} `) === 0)
       return parseFloat(s.substring(o.length + 1).trim());
   return console.error("Metric", o, "not found"), null;
-}, u = __ENV.ROOT_URL, J = new W(u).hostname, b = __ENV.DEFAULT_PASSWORD || "password";
-function y(o, e) {
-  let t = c.get(`${u}/directory/structure/admin/list`, {
+}, h = __ENV.ROOT_URL, L = "AdminLocal";
+function ge(o, e, t) {
+  let r = b(o, e, t);
+  if (r)
+    console.log("Broadcast group already existed");
+  else {
+    console.log("Creating broadcast group");
+    const s = l(t);
+    s["content-type"] = "application/json";
+    let n = JSON.stringify({
+      name: o,
+      structureId: e.id,
+      subType: "BroadcastGroup"
+    }), a = c.post(`${h}/directory/group`, n, { headers: s });
+    d(a, {
+      "create broadcast group": (p) => p.status === 201
+    });
+    const i = JSON.parse(a.body).id;
+    n = JSON.stringify({
+      name: o,
+      autolinkTargetAllStructs: !0,
+      autolinkTargetStructs: [],
+      autolinkUsersFromGroups: ["Teacher"]
+    }), a = c.put(`${h}/directory/group/${i}`, n, { headers: s }), d(a, {
+      "set broadcast group for teachers": (p) => p.status === 200
+    });
+    const u = F(e, t).id;
+    G(i, [u], t), r = b(o, e, t);
+  }
+  return r;
+}
+function G(o, e, t) {
+  const r = l(t);
+  r["content-type"] = "application/json";
+  for (let s of e) {
+    let n = c.post(
+      `${h}/communication/v2/group/${s}/communique/${o}`,
+      "{}",
+      { headers: r }
+    );
+    n.status !== 200 && (console.error(n), g(`Cannot open comm rule from ${s} to ${o}`));
+  }
+}
+function F(o, e) {
+  return _("teachers", o, e);
+}
+function ke(o, e) {
+  return _("students", o, e);
+}
+function me(o, e) {
+  return _("relatives", o, e);
+}
+function _(o, e, t) {
+  return T(e.id, t).filter((s) => {
+    const n = s.name.toLowerCase();
+    return n === `${e.name} group ${o}.`.toLowerCase() || n === `${o} from group ${e.name}.`.toLowerCase();
+  })[0];
+}
+function j(o, e) {
+  const t = l(e);
+  t["Accept-Language"] = "en";
+  let r = c.get(
+    `${h}/directory/group/admin/list?structureId=${o}&translate=false`,
+    { headers: t }
+  );
+  return d(r, {
+    "get structure profile groups should be ok": (s) => s.status == 200
+  }), JSON.parse(r.body);
+}
+function b(o, e, t) {
+  const r = l(t);
+  r["content-type"] = "application/json";
+  let s = c.get(
+    `${h}/directory/group/admin/list?translate=false&structureId=${e.id}`,
+    { headers: r }
+  );
+  return JSON.parse(s.body).filter(
+    (n) => n.subType === "BroadcastGroup" && n.name === o
+  )[0];
+}
+function P(o, e) {
+  const t = l(e);
+  t["content-type"] = "application/json";
+  let r = c.get(
+    `${h}/directory/user/admin/list?groupId=${o}`,
+    { headers: t }
+  );
+  return JSON.parse(r.body);
+}
+const f = __ENV.ROOT_URL, V = new W(f).hostname, R = __ENV.DEFAULT_PASSWORD || "password";
+function w(o, e) {
+  let t = c.get(`${f}/directory/structure/admin/list`, {
     headers: l(e)
   });
   return JSON.parse(t.body).filter(
     (r) => r.name === o
   )[0];
 }
-function ie(o, e) {
-  let t = c.get(`${u}/directory/structure/${o.id}/users`, {
+function M(o, e) {
+  let t = c.get(`${f}/directory/structure/${o.id}/users`, {
     headers: l(e)
   });
   if (t.status !== 200)
     throw `Impossible to get users of ${o.id}`;
   return JSON.parse(t.body);
 }
-function L(o, e) {
-  let t = c.get(`${u}/directory/structure/${o.id}/users`, {
+function B(o, e) {
+  let t = c.get(`${f}/directory/structure/${o.id}/users`, {
     headers: l(e)
   });
   t.status != 200 && g(`Cannot fetch users of structure ${o.id} : ${t}`);
   const r = JSON.parse(t.body);
   for (let s = 0; s < r.length; s++) {
     const n = r[s];
-    F(n);
+    K(n);
   }
 }
-function F(o) {
+function K(o) {
   if (o.code) {
     const e = {};
-    e.login = o.login, e.activationCode = o.code, e.password = b, e.confirmPassword = b, e.acceptCGU = "true";
-    const t = c.post(`${u}/auth/activation`, e, {
+    e.login = o.login, e.activationCode = o.code, e.password = R, e.confirmPassword = R, e.acceptCGU = "true";
+    const t = c.post(`${f}/auth/activation`, e, {
       redirects: 0,
-      headers: { Host: J }
+      headers: { Host: V }
     });
     t.status !== 302 && (console.error(t), g(
       `Could not activate user ${o.login} : ${t.status} - ${t.body}`
     ));
   }
 }
-function pe(o, e, t, r) {
-  const n = A(o.id, r).filter(
+function he(o, e, t, r) {
+  const n = T(o.id, r).filter(
     (a) => t.indexOf(a.name) >= 0
   );
   for (let a of n)
@@ -181,21 +270,21 @@ function pe(o, e, t, r) {
     else {
       const i = l(r);
       i["content-type"] = "application/json";
-      const f = { headers: i }, p = JSON.stringify({
+      const u = { headers: i }, p = JSON.stringify({
         groupId: a.id,
         roleIds: (a.roles || []).concat([e.id])
-      }), _ = c.post(
-        `${u}/appregistry/authorize/group?schoolId=${o.id}`,
+      }), m = c.post(
+        `${f}/appregistry/authorize/group?schoolId=${o.id}`,
         p,
-        f
+        u
       );
-      d(_, {
-        "link role to structure": (E) => E.status == 200
+      d(m, {
+        "link role to structure": (U) => U.status == 200
       });
     }
 }
-function ue(o, e, t) {
-  let r = y(o, t);
+function ye(o, e, t) {
+  let r = w(o, t);
   if (r)
     console.log(`Structure ${o} already exists`);
   else {
@@ -205,18 +294,18 @@ function ue(o, e, t) {
       hasApp: e,
       name: o
     });
-    let a = c.post(`${u}/directory/school`, n, s);
-    a.status !== 201 && (console.error(a.body), g(`Could not create structure ${o}`)), r = y(o, t);
+    let a = c.post(`${f}/directory/school`, n, s);
+    a.status !== 201 && (console.error(a.body), g(`Could not create structure ${o}`)), r = w(o, t);
   }
   return r;
 }
-function de(o) {
-  const e = D(__ENV.ADMC_LOGIN, __ENV.ADMC_PASSWORD), t = j(o);
-  return L(t, e), t;
+function $e(o) {
+  const e = A(__ENV.ADMC_LOGIN, __ENV.ADMC_PASSWORD), t = H(o);
+  return B(t, e), t;
 }
-function j(o) {
-  const e = o || "General", t = D(__ENV.ADMC_LOGIN, __ENV.ADMC_PASSWORD), r = "https://raw.githubusercontent.com/edificeio/edifice-k6-commons/main/data/structure", s = c.get(`${r}/enseignants.csv`).body, n = c.get(`${r}/eleves.csv`).body, a = c.get(`${r}/responsables.csv`).body;
-  return P(
+function H(o) {
+  const e = o || "General", t = A(__ENV.ADMC_LOGIN, __ENV.ADMC_PASSWORD), r = "https://raw.githubusercontent.com/edificeio/edifice-k6-commons/main/data/structure", s = c.get(`${r}/enseignants.csv`).body, n = c.get(`${r}/eleves.csv`).body, a = c.get(`${r}/responsables.csv`).body;
+  return z(
     e,
     {
       teachers: s,
@@ -226,27 +315,27 @@ function j(o) {
     t
   );
 }
-function P(o, e, t) {
-  let r = y(o, t);
+function z(o, e, t) {
+  let r = w(o, t);
   if (r)
     console.log("School already exists");
   else {
-    const s = new O();
+    const s = new S();
     s.append("type", "CSV"), s.append("structureName", o);
     let n, a, i;
     "teachers" in e ? (n = e.teachers, a = e.students, i = e.responsables) : n = e, s.append("Teacher", c.file(n, "enseignants.csv")), a && s.append("Student", c.file(a, "eleves.csv")), i && s.append("Relative", c.file(i, "responsables.csv"));
-    const f = l(t);
-    f["Content-Type"] = "multipart/form-data; boundary=" + s.boundary;
-    const p = { headers: f };
+    const u = l(t);
+    u["Content-Type"] = "multipart/form-data; boundary=" + s.boundary;
+    const p = { headers: u };
     c.post(
-      `${u}/directory/wizard/import`,
+      `${f}/directory/wizard/import`,
       s.body(),
       p
-    ).status != 200 && g(`Could not create structure ${o}`), r = y(o, t);
+    ).status != 200 && g(`Could not create structure ${o}`), r = w(o, t);
   }
   return r;
 }
-function fe(o, e, t) {
+function we(o, e, t) {
   let r;
   if ((e.parents || []).map((n) => n.id).indexOf(o.id) >= 0)
     console.log(
@@ -255,7 +344,7 @@ function fe(o, e, t) {
   else {
     const n = l(t);
     n["content-type"] = "application/json", c.put(
-      `${u}/directory/structure/${e.id}/parent/${o.id}`,
+      `${f}/directory/structure/${e.id}/parent/${o.id}`,
       "{}"
     ).status !== 200 && g(
       `Could not attach structure ${e.name} as a child of ${o.name}`
@@ -263,54 +352,54 @@ function fe(o, e, t) {
   }
   return r;
 }
-function ge(o, e, t) {
-  const r = new O();
+function Ce(o, e, t) {
+  const r = new S();
   r.append("type", "CSV"), r.append("structureName", o.name), r.append("structureId", o.id), r.append("structureExternalId", o.externalId);
   let s, n, a;
   "teachers" in e ? (s = e.teachers, n = e.students, a = e.responsables) : s = e, r.append("Teacher", c.file(s, "enseignants.csv")), n && r.append("Student", c.file(n, "eleves.csv")), a && r.append("Relative", c.file(a, "responsables.csv"));
   const i = l(t);
   i["Content-Type"] = "multipart/form-data; boundary=" + r.boundary;
-  const f = { headers: i };
+  const u = { headers: i };
   return c.post(
-    `${u}/directory/wizard/import`,
+    `${f}/directory/wizard/import`,
     r.body(),
-    f
+    u
   );
 }
-function ke(o) {
+function Oe(o) {
   const e = l(o);
-  return e["content-type"] = "application/json", c.post(`${u}/directory/import`, "{}", { headers: e });
+  return e["content-type"] = "application/json", c.post(`${f}/directory/import`, "{}", { headers: e });
 }
-function V(o, e, t) {
+function X(o, e, t) {
   const r = l(t);
   r["content-type"] = "application/json";
   const s = JSON.stringify({
     name: o,
     structureId: e.id
   });
-  return c.post(`${u}/directory/positions`, s, {
+  return c.post(`${f}/directory/positions`, s, {
     redirects: 0,
     headers: r
   });
 }
-function me(o, e) {
+function Se(o, e) {
   const t = l(e);
-  return t["content-type"] = "application/json", c.del(`${u}/directory/positions/${o}`, null, {
+  return t["content-type"] = "application/json", c.del(`${f}/directory/positions/${o}`, null, {
     redirects: 0,
     headers: t
   });
 }
-function he(o, e, t) {
-  const r = V(o, e, t);
+function _e(o, e, t) {
+  const r = X(o, e, t);
   return r.status !== 201 && (console.error(r), g(
     `Could not create position ${o} on structure ${e.name}`
   )), JSON.parse(r.body);
 }
-function ye(o, e) {
-  const t = l(e), r = new W(`${u}/directory/positions`);
+function be(o, e) {
+  const t = l(e), r = new W(`${f}/directory/positions`);
   return r.searchParams.append("prefix", o), c.get(r.toString(), { headers: t });
 }
-function $e(o, e, t) {
+function q(o, e, t) {
   const r = l(t);
   r["content-type"] = "application/json";
   const s = JSON.stringify({
@@ -319,27 +408,45 @@ function $e(o, e, t) {
     scope: [e.id]
   });
   let n = c.post(
-    `${u}/directory/user/function/${o.id}`,
+    `${f}/directory/user/function/${o.id}`,
     s,
     { headers: r }
   );
-  return z(n, "user should be made ADML"), n;
+  return ee(n, "user should be made ADML"), n;
 }
-const $ = __ENV.ROOT_URL;
-function R(o, e) {
-  let t = c.get(`${$}/appregistry/roles`, {
+function Re(o, e, t, r) {
+  const n = j(
+    o.id,
+    r
+  ).filter(
+    (u) => u.filter === L
+  )[0], a = P(n.id, r), i = e ? a.filter((u) => u.profile === e) : a;
+  if (i.length < t) {
+    const u = M(o, r);
+    for (let p = i.length; p < t; p++) {
+      let m;
+      e ? m = x(u, e, i) : m = D(u, i), console.log(
+        `Turning ${m.login} into an ADML of ${o.id} - ${o.name}`
+      ), q(m, o, r), i.push(m);
+    }
+  }
+  return i.slice(0, t);
+}
+const C = __ENV.ROOT_URL;
+function v(o, e) {
+  let t = c.get(`${C}/appregistry/roles`, {
     headers: l(e)
   });
   return JSON.parse(t.body).filter((s) => s.name === o)[0];
 }
-function we(o, e) {
+function ve(o, e) {
   const t = `${o} - All - Stress Test`;
-  let r = R(t, e);
+  let r = v(t, e);
   if (r)
     console.log(`Role ${t} already existed`);
   else {
     let s = c.get(
-      `${$}/appregistry/applications/actions?actionType=WORKFLOW`,
+      `${C}/appregistry/applications/actions?actionType=WORKFLOW`,
       { headers: l(e) }
     );
     d(s, { "get workflow actions": (p) => p.status == 200 });
@@ -347,28 +454,28 @@ function we(o, e) {
       (p) => p.name === o
     )[0].actions.map((p) => p[0]), i = l(e);
     i["content-type"] = "application/json";
-    const f = {
+    const u = {
       role: t,
       actions: a
     };
-    s = c.post(`${$}/appregistry/role`, JSON.stringify(f), {
+    s = c.post(`${C}/appregistry/role`, JSON.stringify(u), {
       headers: i
-    }), console.log(s), d(s, { "save role ok": (p) => p.status == 201 }), r = R(t, e);
+    }), console.log(s), d(s, { "save role ok": (p) => p.status == 201 }), r = v(t, e);
   }
   return r;
 }
-function A(o, e) {
+function T(o, e) {
   const t = l(e);
   t["Accept-Language"] = "en";
   let r = c.get(
-    `${$}/appregistry/groups/roles?structureId=${o}&translate=false`,
+    `${C}/appregistry/groups/roles?structureId=${o}&translate=false`,
     { headers: t }
   );
   return d(r, {
     "get structure roles should be ok": (s) => s.status == 200
   }), JSON.parse(r.body);
 }
-const G = __ENV.ROOT_URL, Ce = [
+const Y = __ENV.ROOT_URL, We = [
   "org-entcore-workspace-controllers-WorkspaceController|getDocument",
   "org-entcore-workspace-controllers-WorkspaceController|copyDocuments",
   "org-entcore-workspace-controllers-WorkspaceController|getDocumentProperties",
@@ -400,7 +507,7 @@ const G = __ENV.ROOT_URL, Ce = [
   "org-entcore-workspace-controllers-WorkspaceController|renameDocument",
   "org-entcore-workspace-controllers-WorkspaceController|moveDocuments",
   "org-entcore-workspace-controllers-WorkspaceController|updateDocument"
-], Oe = [
+], Ae = [
   "org-entcore-workspace-controllers-WorkspaceController|getDocument",
   "org-entcore-workspace-controllers-WorkspaceController|copyDocuments",
   "org-entcore-workspace-controllers-WorkspaceController|getDocumentProperties",
@@ -413,28 +520,28 @@ const G = __ENV.ROOT_URL, Ce = [
   "org-entcore-workspace-controllers-WorkspaceController|commentFolder",
   "org-entcore-workspace-controllers-WorkspaceController|commentDocument"
 ];
-function Se(o, e) {
+function De(o, e) {
   let t = l(e);
-  const r = new O();
+  const r = new S();
   r.append("file", c.file(o, "file.txt")), t["Content-Type"] = "multipart/form-data; boundary=" + r.boundary;
-  let s = c.post(`${G}/workspace/document`, r.body(), { headers: t });
+  let s = c.post(`${Y}/workspace/document`, r.body(), { headers: t });
   return d(s, {
     "upload doc ok": (n) => n.status === 201
   }), JSON.parse(s.body);
 }
-const B = __ENV.ROOT_URL;
-function _e(o, e, t) {
+const Q = __ENV.ROOT_URL;
+function Te(o, e, t) {
   const r = l(t);
   r["content-type"] = "application/json";
   const s = JSON.stringify(e);
-  return c.put(`${B}/workspace/share/resource/${o}`, s, {
+  return c.put(`${Q}/workspace/share/resource/${o}`, s, {
     headers: r
   });
 }
-const M = __ENV.ROOT_URL;
-function be(o, e, t) {
+const Z = __ENV.ROOT_URL;
+function Ue(o, e, t) {
   const r = c.post(
-    `${M}/communication/v2/group/${o}/communique/${e}`,
+    `${Z}/communication/v2/group/${o}/communique/${e}`,
     "{}",
     { headers: l(t) }
   );
@@ -442,138 +549,73 @@ function be(o, e, t) {
     `Error while adding communication between ${o} -> ${e}`
   ), console.error(r), g(`could not add communication between ${o} -> ${e}`)), r;
 }
-const w = __ENV.ROOT_URL;
-function Re(o, e, t) {
-  let r = v(o, e, t);
-  if (r)
-    console.log("Broadcast group already existed");
-  else {
-    console.log("Creating broadcast group");
-    const s = l(t);
-    s["content-type"] = "application/json";
-    let n = JSON.stringify({
-      name: o,
-      structureId: e.id,
-      subType: "BroadcastGroup"
-    }), a = c.post(`${w}/directory/group`, n, { headers: s });
-    d(a, {
-      "create broadcast group": (p) => p.status === 201
-    });
-    const i = JSON.parse(a.body).id;
-    n = JSON.stringify({
-      name: o,
-      autolinkTargetAllStructs: !0,
-      autolinkTargetStructs: [],
-      autolinkUsersFromGroups: ["Teacher"]
-    }), a = c.put(`${w}/directory/group/${i}`, n, { headers: s }), d(a, {
-      "set broadcast group for teachers": (p) => p.status === 200
-    });
-    const f = H(e, t).id;
-    K(i, [f], t), r = v(o, e, t);
-  }
-  return r;
-}
-function K(o, e, t) {
-  const r = l(t);
-  r["content-type"] = "application/json";
-  for (let s of e) {
-    let n = c.post(
-      `${w}/communication/v2/group/${s}/communique/${o}`,
-      "{}",
-      { headers: r }
-    );
-    n.status !== 200 && (console.error(n), g(`Cannot open comm rule from ${s} to ${o}`));
-  }
-}
-function H(o, e) {
-  return S("teachers", o, e);
-}
-function ve(o, e) {
-  return S("students", o, e);
-}
-function We(o, e) {
-  return S("relatives", o, e);
-}
-function S(o, e, t) {
-  return A(e.id, t).filter((s) => {
-    const n = s.name.toLowerCase();
-    return n === `${e.name} group ${o}.`.toLowerCase() || n === `${o} from group ${e.name}.`.toLowerCase();
-  })[0];
-}
-function v(o, e, t) {
-  const r = l(t);
-  r["content-type"] = "application/json";
-  let s = c.get(
-    `${w}/directory/group/admin/list?translate=false&structureId=${e.id}`,
-    { headers: r }
-  );
-  return JSON.parse(s.body).filter(
-    (n) => n.subType === "BroadcastGroup" && n.name === o
-  )[0];
-}
-function z(o, e, t = 200) {
+function ee(o, e, t = 200) {
   const r = t || 200;
   o.status != r && (console.error(`ko - ${e}. Expecting ${r} but got ${o.status}`), console.error(o), g(e + " ko"));
 }
-function De(o, e) {
+function Ee(o, e) {
   const t = {};
   t[e] = () => o, d({}, t) || g(e);
 }
-const X = __ENV.ROOT_URL;
-function Ae(o) {
-  let e = c.get(`${X}/userbook/search/criteria`, {
+const oe = __ENV.ROOT_URL;
+function Ie(o) {
+  let e = c.get(`${oe}/userbook/search/criteria`, {
     headers: l(o)
   });
   return JSON.parse(e.body);
 }
 export {
-  I as BASE_URL,
-  C as Session,
-  h as SessionMode,
-  Ce as WS_MANAGER_SHARE,
-  Oe as WS_READER_SHARE,
-  F as activateUser,
-  L as activateUsers,
-  K as addCommRuleToGroup,
-  be as addCommunicationBetweenGroups,
-  De as assertCondition,
-  z as assertOk,
-  fe as attachStructureAsChild,
-  ne as authenticateOAuth2,
-  D as authenticateWeb,
-  ae as checkStatus,
-  we as createAndSetRole,
-  Re as createBroadcastGroup,
-  j as createDefaultStructure,
-  ue as createEmptyStructure,
-  V as createPosition,
-  he as createPositionOrFail,
-  P as createStructure,
-  me as deletePosition,
-  v as getBroadcastGroup,
-  te as getConnectedUserId,
+  L as ADML_FILTER,
+  N as BASE_URL,
+  O as Session,
+  $ as SessionMode,
+  We as WS_MANAGER_SHARE,
+  Ae as WS_READER_SHARE,
+  K as activateUser,
+  B as activateUsers,
+  G as addCommRuleToGroup,
+  Ue as addCommunicationBetweenGroups,
+  Ee as assertCondition,
+  ee as assertOk,
+  we as attachStructureAsChild,
+  ue as authenticateOAuth2,
+  A as authenticateWeb,
+  de as checkStatus,
+  ve as createAndSetRole,
+  ge as createBroadcastGroup,
+  H as createDefaultStructure,
+  ye as createEmptyStructure,
+  X as createPosition,
+  _e as createPositionOrFail,
+  z as createStructure,
+  Se as deletePosition,
+  Re as getAdmlsOrMakThem,
+  b as getBroadcastGroup,
+  le as getConnectedUserId,
   l as getHeaders,
-  le as getMetricValue,
-  We as getParentRole,
-  S as getProfileGroupOfStructure,
-  x as getRandomUser,
-  ce as getRandomUserWithProfile,
-  R as getRoleByName,
-  A as getRolesOfStructure,
-  y as getSchoolByName,
-  Ae as getSearchCriteria,
-  ve as getStudentRole,
-  H as getTeacherRole,
-  ie as getUsersOfSchool,
-  ge as importUsers,
-  de as initStructure,
-  pe as linkRoleToUsers,
-  re as logout,
-  $e as makeAdml,
-  ye as searchPositions,
-  oe as searchUser,
-  _e as shareFile,
-  se as switchSession,
-  ke as triggerImport,
-  Se as uploadFile
+  fe as getMetricValue,
+  me as getParentRole,
+  _ as getProfileGroupOfStructure,
+  j as getProfileGroupsOfStructure,
+  D as getRandomUser,
+  x as getRandomUserWithProfile,
+  v as getRoleByName,
+  T as getRolesOfStructure,
+  w as getSchoolByName,
+  Ie as getSearchCriteria,
+  ke as getStudentRole,
+  F as getTeacherRole,
+  P as getUsersOfGroup,
+  M as getUsersOfSchool,
+  Ce as importUsers,
+  $e as initStructure,
+  he as linkRoleToUsers,
+  ie as logout,
+  q as makeAdml,
+  be as searchPositions,
+  ae as searchUser,
+  Te as shareFile,
+  pe as switchSession,
+  Oe as triggerImport,
+  De as uploadFile
 };

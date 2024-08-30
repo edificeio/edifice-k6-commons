@@ -119,3 +119,25 @@ export type UserbookSearchCriteria = {
   groupTypes: string[];
   positions: UserPosition[];
 };
+
+export type ProfileGroup = {
+  id: string;
+  name: string;
+  filter: string;
+  type: string;
+  subType: string;
+  nbUsers: number;
+  classes: IdAndName[];
+  structures: IdAndName[];
+};
+
+export type UserInfo = {
+  id: string;
+  externalId: string;
+  login: string;
+  type: string;
+  firstName: string;
+  lastName: string;
+  source: string;
+  profile: string;
+};

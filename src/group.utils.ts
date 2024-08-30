@@ -1,9 +1,18 @@
 import http from "k6/http";
 import { getHeaders } from "./user.utils";
-import { BroadcastGroup, Session, Structure, getRolesOfStructure } from ".";
+import {
+  BroadcastGroup,
+  ProfileGroup,
+  Session,
+  Structure,
+  UserInfo,
+  getRolesOfStructure,
+} from ".";
 import { check, fail } from "k6";
 
 const rootUrl = __ENV.ROOT_URL;
+
+export const ADML_FILTER = "AdminLocal";
 
 export function createBroadcastGroup(
   broadcastListName: string,
@@ -93,6 +102,28 @@ export function getProfileGroupOfStructure(
   })[0];
 }
 
+/**
+ *
+ * @param structureId Id of the structure whose profile groups we want to fetch
+ * @param session Session of the user performing the action
+ * @returns All the ProfileGroup of the structure
+ */
+export function getProfileGroupsOfStructure(
+  structureId: string,
+  session: Session,
+): ProfileGroup[] {
+  const headers = getHeaders(session);
+  headers["Accept-Language"] = "en";
+  let res = http.get(
+    `${rootUrl}/directory/group/admin/list?structureId=${structureId}&translate=false`,
+    { headers },
+  );
+  check(res, {
+    "get structure profile groups should be ok": (r) => r.status == 200,
+  });
+  return JSON.parse(<string>res.body);
+}
+
 export function getBroadcastGroup(
   broadcastListName: string,
   school: Structure,
@@ -107,4 +138,20 @@ export function getBroadcastGroup(
   return JSON.parse(<string>res.body).filter(
     (e: any) => e.subType === "BroadcastGroup" && e.name === broadcastListName,
   )[0];
+}
+
+/**
+ *
+ * @param groupId Id of the group whose users we want
+ * @param session Session of the requester
+ * @returns List of the users belonging to the specified group
+ */
+export function getUsersOfGroup(groupId: string, session: Session): UserInfo[] {
+  const headers = getHeaders(session);
+  headers["content-type"] = "application/json";
+  let res = http.get(
+    `${rootUrl}/directory/user/admin/list?groupId=${groupId}`,
+    { headers },
+  );
+  return JSON.parse(<string>res.body);
 }
