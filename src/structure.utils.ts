@@ -335,6 +335,27 @@ export function createPosition(
   return res;
 }
 
+export function attributePositions(
+  user: { id: string },
+  positions: UserPosition[],
+  session?: Session,
+) {
+  const headers = getHeaders(session);
+  headers["content-type"] = "application/json";
+  const payload: { positionIds?: string[] } = {};
+  if (positions !== null && positions !== undefined) {
+    payload.positionIds = positions.map((p) => p.id);
+  }
+  let res = http.put(
+    `${rootUrl}/directory/user/${user.id}`,
+    JSON.stringify(payload),
+    {
+      headers,
+    },
+  );
+  return res;
+}
+
 export function deletePosition(positionId: string, session?: Session) {
   const headers = getHeaders(session);
   headers["content-type"] = "application/json";

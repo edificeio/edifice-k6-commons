@@ -9,6 +9,25 @@ export function assertOk(res: any, label: string, code: number = 200) {
   }
 }
 
+export function assertKo(res: any, message: string, code: number = 500) {
+  assertCondition(
+    () => res && res.code === code,
+    `[${res.request.method}]${res.url} returns code ${code}: ${message} `,
+  );
+}
+export function checkReturnCode(res: any, message: string, code: number = 500) {
+  const checks: any = {};
+  checks[`${message} (expects ${code})`] = () => {
+    const ok = res && res.status === code;
+    if (!ok) {
+      console.warn("Expected ", code, " but got ", res.status);
+      console.warn(res);
+    }
+    return ok;
+  };
+  return check({}, checks);
+}
+
 export function assertCondition(assertion: () => boolean, message: string) {
   const checks: any = {};
   checks[message] = () => assertion;

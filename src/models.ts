@@ -139,6 +139,7 @@ export type UserInfo = {
   firstName: string;
   lastName: string;
   source: string;
+  userPositions: string[];
 };
 
 export type StructureFlavour = "default" | "tiny";

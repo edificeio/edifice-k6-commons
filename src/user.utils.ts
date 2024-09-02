@@ -1,6 +1,6 @@
 import http from "k6/http";
-import { check } from "k6";
-import { Cookie, Session, SessionMode } from "./models";
+import { check, fail } from "k6";
+import { Cookie, Session, SessionMode, UserInfo } from "./models";
 
 const THIRTY_MINUTES_IN_SECONDS = 30 * 60;
 
@@ -59,12 +59,15 @@ export const authenticateWeb = function (login: string, pwd?: string) {
   const response = http.post(`${rootUrl}/auth/login`, credentials, {
     redirects: 0,
   });
-  check(response, {
-    "should redirect connected user to login page": (r) => r.status === 302,
-    "should have set an auth cookie": (r) =>
-      r.cookies["oneSessionId"] !== null &&
-      r.cookies["oneSessionId"] !== undefined,
-  });
+  if (response.status !== 302) {
+    fail("should redirect connected user to login page");
+  }
+  if (
+    response.cookies["oneSessionId"] === null ||
+    response.cookies["oneSessionId"] === undefined
+  ) {
+    fail("login process should have set an auth cookie");
+  }
   if (!response.cookies["oneSessionId"]) {
     console.error(`Could not get oneSessionId for ${login}`);
     return null;
@@ -82,12 +85,11 @@ export const authenticateWeb = function (login: string, pwd?: string) {
 };
 
 export const logout = function (session: Session) {
-  /*const res = http.get(`${rootUrl}/auth/logout?callback=/`, {
+  const res = http.get(`${rootUrl}/auth/logout?callback=/`, {
     headers: getHeaders(session),
-  });*/
-  console.log("Removing session", session);
+  });
   http.cookieJar().clear(rootUrl);
-  //return res;
+  return res;
 };
 
 export const switchSession = function (session: Session): Session {
@@ -163,4 +165,15 @@ export function checkStatus(
     console.error(checkName, res);
   }
   return ok;
+}
+
+export function getUserProfileOrFail(id: string, session: Session): UserInfo {
+  let res = http.get(`${rootUrl}/directory/user/${id}?manual-groups=true`, {
+    headers: getHeaders(session),
+  });
+  if (res.status !== 200) {
+    console.error(res);
+    fail(`Could not get user profile`);
+  }
+  return JSON.parse(<string>res.body);
 }
