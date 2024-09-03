@@ -92,10 +92,15 @@ export const logout = function (session: Session) {
   return res;
 };
 
-export const switchSession = function (session: Session): Session {
+export const switchSession = function (session?: Session): Session | undefined {
   const jar = http.cookieJar();
-  jar.set(rootUrl, "oneSessionId", session.token);
-  jar.set(rootUrl, "XSRF-TOKEN", session.getCookie("XSRF-TOKEN") || "");
+  if (session) {
+    jar.set(rootUrl, "oneSessionId", session.token);
+    jar.set(rootUrl, "XSRF-TOKEN", session.getCookie("XSRF-TOKEN") || "");
+  } else {
+    jar.delete(rootUrl, "oneSessionId");
+    jar.delete(rootUrl, "XSRF-TOKEN");
+  }
   return session;
 };
 
