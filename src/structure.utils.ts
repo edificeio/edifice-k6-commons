@@ -334,6 +334,21 @@ export function createPosition(
   });
   return res;
 }
+export function getOrCreatePosition(
+  positionName: string,
+  structure: Structure,
+  session?: Session,
+): UserPosition {
+  let res = createPosition(positionName, structure, session);
+  if (res.status === 409) {
+    const existingPositionId: string = JSON.parse(
+      <string>res.body,
+    ).existingPositionId;
+    return getPositionByIdOrFail(existingPositionId, session);
+  } else {
+    return JSON.parse(<string>res.body);
+  }
+}
 
 export function attributePositions(
   user: { id: string },
@@ -364,6 +379,16 @@ export function deletePosition(positionId: string, session?: Session) {
     headers,
   });
   return res;
+}
+
+export function getPositionByIdOrFail(
+  positionId: string,
+  session?: Session,
+): UserPosition {
+  let position = http.get(`${rootUrl}/directory/positions/${positionId}`, {
+    headers: getHeaders(session),
+  });
+  return JSON.parse(<string>position.body);
 }
 
 export function createPositionOrFail(
