@@ -406,10 +406,10 @@ export function createPositionOrFail(
   return JSON.parse(<string>res.body);
 }
 
-export function searchPositions(prefix: string, session: Session) {
+export function searchPositions(content: string, session: Session) {
   const headers = getHeaders(session);
   const url = new URL(`${rootUrl}/directory/positions`);
-  url.searchParams.append("prefix", prefix);
+  url.searchParams.append("content", content);
   return http.get(url.toString(), { headers });
 }
 
