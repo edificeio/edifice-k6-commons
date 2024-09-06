@@ -4,6 +4,7 @@ import {
   getHeaders,
   getRandomUser,
   getRandomUserWithProfile,
+  switchSession,
 } from "./user.utils";
 import {
   ADML_FILTER,
@@ -491,4 +492,24 @@ export function getAdmlsOrMakThem(
     }
   }
   return admlUsers.slice(0, nbAdmls);
+}
+
+export function attachUserToStructures(
+  user: UserInfo,
+  structures: Structure | Structure[],
+  session?: Session,
+) {
+  try {
+    const _session = authenticateWeb(__ENV.ADMC_LOGIN, __ENV.ADMC_PASSWORD)!;
+    const _structures = Array.isArray(structures) ? structures : [structures];
+    for (let structure of _structures) {
+      http.put(
+        `${rootUrl}/directory/structure/${structure.id}/link/${user.id}`,
+        null,
+        { headers: getHeaders(_session) },
+      );
+    }
+  } finally {
+    switchSession(session);
+  }
 }
