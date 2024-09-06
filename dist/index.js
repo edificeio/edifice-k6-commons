@@ -1,7 +1,7 @@
 var E = Object.defineProperty;
 var U = (o, e, t) => e in o ? E(o, e, { enumerable: !0, configurable: !0, writable: !0, value: t }) : o[e] = t;
 var y = (o, e, t) => (U(o, typeof e != "symbol" ? e + "" : e, t), t);
-import n from "k6/http";
+import s from "k6/http";
 import { check as f, fail as k } from "k6";
 import { FormData as S } from "https://jslib.k6.io/formdata/0.0.2/index.js";
 import { URL as v } from "https://jslib.k6.io/url/1.0.0/index.js";
@@ -10,12 +10,12 @@ const $ = {
   OAUTH2: 1
 };
 class w {
-  constructor(e, t, r, s) {
+  constructor(e, t, r, n) {
     y(this, "expiresAt");
     y(this, "token");
     y(this, "mode");
     y(this, "cookies");
-    this.token = e, this.mode = t, this.cookies = s, this.expiresAt = Date.now() + r * 1e3 - 3e3;
+    this.token = e, this.mode = t, this.cookies = n, this.expiresAt = Date.now() + r * 1e3 - 3e3;
   }
   static from(e) {
     const t = new w(e.token, e.mode, 0, e.cookies);
@@ -32,14 +32,14 @@ const J = __ENV.BASE_URL, x = 30 * 60, g = __ENV.ROOT_URL, l = function(o) {
   let e;
   return o ? o.mode === $.COOKIE ? e = { "x-xsrf-token": o.getCookie("XSRF-TOKEN") || "" } : o.mode === $.OAUTH2 ? e = { Authorization: `Bearer ${o.token}` } : e = {} : e = {}, e;
 }, ie = function(o, e) {
-  const t = n.get(`${g}/conversation/visible?search=${o}`, {
+  const t = s.get(`${g}/conversation/visible?search=${o}`, {
     headers: l(e)
   });
   return f(t, {
-    "should get an OK response": (s) => s.status == 200
+    "should get an OK response": (n) => n.status == 200
   }), t.json("users")[0].id;
 }, ue = function(o) {
-  const e = n.get(`${g}/auth/oauth2/userinfo`, {
+  const e = s.get(`${g}/auth/oauth2/userinfo`, {
     headers: l(o)
   });
   return f(e, {
@@ -47,7 +47,7 @@ const J = __ENV.BASE_URL, x = 30 * 60, g = __ENV.ROOT_URL, l = function(o) {
     "should get a valid userId": (t) => !!t.json("userId")
   }), e.json("userId");
 }, I = function(o, e) {
-  const t = n.cookieJar();
+  const t = s.cookieJar();
   t.clear(g);
   let r = {
     email: o,
@@ -55,36 +55,36 @@ const J = __ENV.BASE_URL, x = 30 * 60, g = __ENV.ROOT_URL, l = function(o) {
     callBack: "",
     detail: ""
   };
-  const s = n.post(`${g}/auth/login`, r, {
+  const n = s.post(`${g}/auth/login`, r, {
     redirects: 0
   });
-  if (s.status !== 302 && k("should redirect connected user to login page"), (s.cookies.oneSessionId === null || s.cookies.oneSessionId === void 0) && k("login process should have set an auth cookie"), !s.cookies.oneSessionId)
+  if (n.status !== 302 && k("should redirect connected user to login page"), (n.cookies.oneSessionId === null || n.cookies.oneSessionId === void 0) && k("login process should have set an auth cookie"), !n.cookies.oneSessionId)
     return console.error(`Could not get oneSessionId for ${o}`), null;
-  t.set(g, "oneSessionId", s.cookies.oneSessionId[0].value);
-  const c = Object.keys(s.cookies).map((a) => ({ name: a, value: s.cookies[a][0].value }));
+  t.set(g, "oneSessionId", n.cookies.oneSessionId[0].value);
+  const c = Object.keys(n.cookies).map((a) => ({ name: a, value: n.cookies[a][0].value }));
   return new w(
-    s.cookies.oneSessionId[0].value,
+    n.cookies.oneSessionId[0].value,
     $.COOKIE,
     x,
     c
   );
 }, pe = function(o) {
-  const e = n.get(`${g}/auth/logout?callback=/`, {
+  const e = s.get(`${g}/auth/logout?callback=/`, {
     headers: l(o)
   });
-  return n.cookieJar().clear(g), e;
+  return s.cookieJar().clear(g), e;
 }, de = function(o) {
-  const e = n.cookieJar();
+  const e = s.cookieJar();
   return o ? (e.set(g, "oneSessionId", o.token), e.set(g, "XSRF-TOKEN", o.getCookie("XSRF-TOKEN") || "")) : (e.delete(g, "oneSessionId"), e.delete(g, "XSRF-TOKEN")), o;
 }, fe = function(o, e, t, r) {
-  let s = {
+  let n = {
     grant_type: "password",
     username: o,
     password: e,
     client_id: t,
     client_secret: r,
     scope: "timeline userbook blog lvs actualites pronote schoolbook support viescolaire zimbra conversation directory homeworks userinfo workspace portal cas sso presences incidents competences diary edt infra auth"
-  }, c = n.post(`${g}/auth/oauth2/token`, s, {
+  }, c = s.post(`${g}/auth/oauth2/token`, n, {
     redirects: 0
   });
   f(c, {
@@ -101,40 +101,40 @@ const J = __ENV.BASE_URL, x = 30 * 60, g = __ENV.ROOT_URL, l = function(o) {
 function A(o, e) {
   const t = (e || []).map((r) => r.id);
   for (let r = 0; r < 1e3; r++) {
-    const s = o[Math.floor(Math.random() * o.length)];
-    if (t.indexOf(s.id) < 0)
-      return s;
+    const n = o[Math.floor(Math.random() * o.length)];
+    if (t.indexOf(n.id) < 0)
+      return n;
   }
   throw "cannot.find.random.user";
 }
 function L(o, e, t) {
-  const r = o.filter((s) => s.type === e);
+  const r = o.filter((n) => n.type === e);
   return A(r, t);
 }
 function ge(o, e, t) {
   const r = {};
   r[e] = (c) => c.status === t;
-  const s = f(o, r);
-  return s || console.error(e, o), s;
+  const n = f(o, r);
+  return n || console.error(e, o), n;
 }
 function ke(o, e) {
-  let t = n.get(`${g}/directory/user/${o}?manual-groups=true`, {
+  let t = s.get(`${g}/directory/user/${o}?manual-groups=true`, {
     headers: l(e)
   });
   return t.status !== 200 && (console.error(t), k("Could not get user profile")), JSON.parse(t.body);
 }
 const me = function(o, e) {
-  const t = n.get(`${J}/metrics`, {
+  const t = s.get(`${J}/metrics`, {
     headers: l(e)
   });
   f(t, {
-    "should get an OK response": (s) => s.status == 200
+    "should get an OK response": (n) => n.status == 200
   });
   const r = t.body.split(`
 `);
-  for (let s of r)
-    if (s.indexOf(`${o} `) === 0)
-      return parseFloat(s.substring(o.length + 1).trim());
+  for (let n of r)
+    if (n.indexOf(`${o} `) === 0)
+      return parseFloat(n.substring(o.length + 1).trim());
   return console.error("Metric", o, "not found"), null;
 }, h = __ENV.ROOT_URL, P = "AdminLocal";
 function he(o, e, t) {
@@ -143,13 +143,13 @@ function he(o, e, t) {
     console.log("Broadcast group already existed");
   else {
     console.log("Creating broadcast group");
-    const s = l(t);
-    s["content-type"] = "application/json";
+    const n = l(t);
+    n["content-type"] = "application/json";
     let c = JSON.stringify({
       name: o,
       structureId: e.id,
       subType: "BroadcastGroup"
-    }), a = n.post(`${h}/directory/group`, c, { headers: s });
+    }), a = s.post(`${h}/directory/group`, c, { headers: n });
     f(a, {
       "create broadcast group": (u) => u.status === 201
     });
@@ -159,7 +159,7 @@ function he(o, e, t) {
       autolinkTargetAllStructs: !0,
       autolinkTargetStructs: [],
       autolinkUsersFromGroups: ["Teacher"]
-    }), a = n.put(`${h}/directory/group/${i}`, c, { headers: s }), f(a, {
+    }), a = s.put(`${h}/directory/group/${i}`, c, { headers: n }), f(a, {
       "set broadcast group for teachers": (u) => u.status === 200
     });
     const p = G(e, t).id;
@@ -170,13 +170,13 @@ function he(o, e, t) {
 function F(o, e, t) {
   const r = l(t);
   r["content-type"] = "application/json";
-  for (let s of e) {
-    let c = n.post(
-      `${h}/communication/v2/group/${s}/communique/${o}`,
+  for (let n of e) {
+    let c = s.post(
+      `${h}/communication/v2/group/${n}/communique/${o}`,
       "{}",
       { headers: r }
     );
-    c.status !== 200 && (console.error(c), k(`Cannot open comm rule from ${s} to ${o}`));
+    c.status !== 200 && (console.error(c), k(`Cannot open comm rule from ${n} to ${o}`));
   }
 }
 function G(o, e) {
@@ -189,37 +189,37 @@ function $e(o, e) {
   return b("relatives", o, e);
 }
 function b(o, e, t) {
-  return D(e.id, t).filter((s) => {
-    const c = s.name.toLowerCase();
+  return D(e.id, t).filter((n) => {
+    const c = n.name.toLowerCase();
     return c === `${e.name} group ${o}.`.toLowerCase() || c === `${o} from group ${e.name}.`.toLowerCase();
   })[0];
 }
 function j(o, e) {
   const t = l(e);
   t["Accept-Language"] = "en";
-  let r = n.get(
+  let r = s.get(
     `${h}/directory/group/admin/list?structureId=${o}&translate=false`,
     { headers: t }
   );
   return f(r, {
-    "get structure profile groups should be ok": (s) => s.status == 200
+    "get structure profile groups should be ok": (n) => n.status == 200
   }), JSON.parse(r.body);
 }
 function _(o, e, t) {
   const r = l(t);
   r["content-type"] = "application/json";
-  let s = n.get(
+  let n = s.get(
     `${h}/directory/group/admin/list?translate=false&structureId=${e.id}`,
     { headers: r }
   );
-  return JSON.parse(s.body).filter(
+  return JSON.parse(n.body).filter(
     (c) => c.subType === "BroadcastGroup" && c.name === o
   )[0];
 }
 function V(o, e) {
   const t = l(e);
   t["content-type"] = "application/json";
-  let r = n.get(
+  let r = s.get(
     `${h}/directory/user/admin/list?groupId=${o}`,
     { headers: t }
   );
@@ -227,7 +227,7 @@ function V(o, e) {
 }
 const d = __ENV.ROOT_URL, M = new v(d).hostname, R = __ENV.DEFAULT_PASSWORD || "password";
 function O(o, e) {
-  let t = n.get(`${d}/directory/structure/admin/list`, {
+  let t = s.get(`${d}/directory/structure/admin/list`, {
     headers: l(e)
   });
   return JSON.parse(t.body).filter(
@@ -235,7 +235,7 @@ function O(o, e) {
   )[0];
 }
 function B(o, e) {
-  let t = n.get(`${d}/directory/structure/${o.id}/users`, {
+  let t = s.get(`${d}/directory/structure/${o.id}/users`, {
     headers: l(e)
   });
   if (t.status !== 200)
@@ -243,13 +243,13 @@ function B(o, e) {
   return JSON.parse(t.body);
 }
 function K(o, e) {
-  let t = n.get(`${d}/directory/structure/${o.id}/users`, {
+  let t = s.get(`${d}/directory/structure/${o.id}/users`, {
     headers: l(e)
   });
   t.status != 200 && k(`Cannot fetch users of structure ${o.id} : ${t}`);
   const r = JSON.parse(t.body);
-  for (let s = 0; s < r.length; s++) {
-    const c = r[s];
+  for (let n = 0; n < r.length; n++) {
+    const c = r[n];
     H(c);
   }
 }
@@ -257,7 +257,7 @@ function H(o) {
   if (o.code) {
     const e = {};
     e.login = o.login, e.activationCode = o.code, e.password = R, e.confirmPassword = R, e.acceptCGU = "true";
-    const t = n.post(`${d}/auth/activation`, e, {
+    const t = s.post(`${d}/auth/activation`, e, {
       redirects: 0,
       headers: { Host: M }
     });
@@ -279,7 +279,7 @@ function Oe(o, e, t, r) {
       const p = { headers: i }, u = JSON.stringify({
         groupId: a.id,
         roleIds: (a.roles || []).concat([e.id])
-      }), m = n.post(
+      }), m = s.post(
         `${d}/appregistry/authorize/group?schoolId=${o.id}`,
         u,
         p
@@ -294,13 +294,13 @@ function Ce(o, e, t) {
   if (r)
     console.log(`Structure ${o} already exists`);
   else {
-    const s = l(t);
-    s["content-type"] = "application/json";
+    const n = l(t);
+    n["content-type"] = "application/json";
     const c = JSON.stringify({
       hasApp: e,
       name: o
     });
-    let a = n.post(`${d}/directory/school`, c, s);
+    let a = s.post(`${d}/directory/school`, c, n);
     a.status !== 201 && (console.error(a.body), k(`Could not create structure ${o}`)), r = O(o, t);
   }
   return r;
@@ -310,7 +310,7 @@ function we(o, e = "default") {
   return K(r, t), r;
 }
 function z(o, e = "default") {
-  const t = o || "General", r = I(__ENV.ADMC_LOGIN, __ENV.ADMC_PASSWORD), s = "https://raw.githubusercontent.com/edificeio/edifice-k6-commons/develop/data/structure", c = n.get(`${s}/enseignants.${e}.csv`).body, a = n.get(`${s}/eleves.${e}.csv`).body, i = n.get(`${s}/responsables.${e}.csv`).body;
+  const t = o || "General", r = I(__ENV.ADMC_LOGIN, __ENV.ADMC_PASSWORD), n = "https://raw.githubusercontent.com/edificeio/edifice-k6-commons/develop/data/structure", c = s.get(`${n}/enseignants.${e}.csv`).body, a = s.get(`${n}/eleves.${e}.csv`).body, i = s.get(`${n}/responsables.${e}.csv`).body;
   return X(
     t,
     {
@@ -326,16 +326,16 @@ function X(o, e, t) {
   if (r)
     console.log("School already exists");
   else {
-    const s = new S();
-    s.append("type", "CSV"), s.append("structureName", o);
+    const n = new S();
+    n.append("type", "CSV"), n.append("structureName", o);
     let c, a, i;
-    "teachers" in e ? (c = e.teachers, a = e.students, i = e.responsables) : c = e, s.append("Teacher", n.file(c, "enseignants.csv")), a && s.append("Student", n.file(a, "eleves.csv")), i && s.append("Relative", n.file(i, "responsables.csv"));
+    "teachers" in e ? (c = e.teachers, a = e.students, i = e.responsables) : c = e, n.append("Teacher", s.file(c, "enseignants.csv")), a && n.append("Student", s.file(a, "eleves.csv")), i && n.append("Relative", s.file(i, "responsables.csv"));
     const p = l(t);
-    p["Content-Type"] = "multipart/form-data; boundary=" + s.boundary;
+    p["Content-Type"] = "multipart/form-data; boundary=" + n.boundary;
     const u = { headers: p };
-    n.post(
+    s.post(
       `${d}/directory/wizard/import`,
-      s.body(),
+      n.body(),
       u
     ).status != 200 && k(`Could not create structure ${o}`), r = O(o, t);
   }
@@ -349,7 +349,7 @@ function Se(o, e, t) {
     ), r = !1;
   else {
     const c = l(t);
-    c["content-type"] = "application/json", n.put(
+    c["content-type"] = "application/json", s.put(
       `${d}/directory/structure/${e.id}/parent/${o.id}`,
       "{}"
     ).status !== 200 && k(
@@ -361,12 +361,12 @@ function Se(o, e, t) {
 function be(o, e, t) {
   const r = new S();
   r.append("type", "CSV"), r.append("structureName", o.name), r.append("structureId", o.id), r.append("structureExternalId", o.externalId);
-  let s, c, a;
-  "teachers" in e ? (s = e.teachers, c = e.students, a = e.responsables) : s = e, r.append("Teacher", n.file(s, "enseignants.csv")), c && r.append("Student", n.file(c, "eleves.csv")), a && r.append("Relative", n.file(a, "responsables.csv"));
+  let n, c, a;
+  "teachers" in e ? (n = e.teachers, c = e.students, a = e.responsables) : n = e, r.append("Teacher", s.file(n, "enseignants.csv")), c && r.append("Student", s.file(c, "eleves.csv")), a && r.append("Relative", s.file(a, "responsables.csv"));
   const i = l(t);
   i["Content-Type"] = "multipart/form-data; boundary=" + r.boundary;
   const p = { headers: i };
-  return n.post(
+  return s.post(
     `${d}/directory/wizard/import`,
     r.body(),
     p
@@ -374,16 +374,16 @@ function be(o, e, t) {
 }
 function _e(o) {
   const e = l(o);
-  return e["content-type"] = "application/json", n.post(`${d}/directory/import`, "{}", { headers: e });
+  return e["content-type"] = "application/json", s.post(`${d}/directory/import`, "{}", { headers: e });
 }
 function T(o, e, t) {
   const r = l(t);
   r["content-type"] = "application/json";
-  const s = JSON.stringify({
+  const n = JSON.stringify({
     name: o,
     structureId: e.id
   });
-  return n.post(`${d}/directory/positions`, s, {
+  return s.post(`${d}/directory/positions`, n, {
     redirects: 0,
     headers: r
   });
@@ -391,20 +391,20 @@ function T(o, e, t) {
 function Re(o, e, t) {
   let r = T(o, e, t);
   if (r.status === 409) {
-    const s = JSON.parse(
+    const n = JSON.parse(
       r.body
     ).existingPositionId;
-    return q(s, t);
+    return q(n, t);
   } else
     return JSON.parse(r.body);
 }
 function We(o, e, t) {
   const r = l(t);
   r["content-type"] = "application/json";
-  const s = {};
-  return e != null && (s.positionIds = e.map((a) => a.id)), n.put(
+  const n = {};
+  return e != null && (n.positionIds = e.map((a) => a.id)), s.put(
     `${d}/directory/user/${o.id}`,
-    JSON.stringify(s),
+    JSON.stringify(n),
     {
       headers: r
     }
@@ -412,13 +412,13 @@ function We(o, e, t) {
 }
 function ve(o, e) {
   const t = l(e);
-  return t["content-type"] = "application/json", n.del(`${d}/directory/positions/${o}`, null, {
+  return t["content-type"] = "application/json", s.del(`${d}/directory/positions/${o}`, null, {
     redirects: 0,
     headers: t
   });
 }
 function q(o, e) {
-  let t = n.get(`${d}/directory/positions/${o}`, {
+  let t = s.get(`${d}/directory/positions/${o}`, {
     headers: l(e)
   });
   return JSON.parse(t.body);
@@ -431,27 +431,27 @@ function Ie(o, e, t) {
 }
 function Ae(o, e) {
   const t = l(e), r = new v(`${d}/directory/positions`);
-  return r.searchParams.append("prefix", o), n.get(r.toString(), { headers: t });
+  return r.searchParams.append("content", o), s.get(r.toString(), { headers: t });
 }
 function Y(o, e, t) {
   const r = l(t);
   r["content-type"] = "application/json";
-  const s = JSON.stringify({
+  const n = JSON.stringify({
     functionCode: "ADMIN_LOCAL",
     inherit: "s",
     scope: [e.id]
   });
-  let c = n.post(
+  let c = s.post(
     `${d}/directory/user/function/${o.id}`,
-    s,
+    n,
     { headers: r }
   );
   return oe(c, "user should be made ADML"), c;
 }
-function Te(o, e, t, r, s) {
+function Te(o, e, t, r, n) {
   const a = j(
     o.id,
-    s
+    n
   ).filter(
     (p) => p.filter === P
   )[0];
@@ -459,7 +459,7 @@ function Te(o, e, t, r, s) {
   if (a) {
     const p = V(
       a.id,
-      s
+      n
     );
     i = e ? p.filter((u) => u.type === e) : p;
   } else
@@ -469,22 +469,22 @@ function Te(o, e, t, r, s) {
     i = i.filter((u) => p.indexOf(u.id) < 0);
   }
   if (i.length < t) {
-    const p = B(o, s);
+    const p = B(o, n);
     for (let u = i.length; u < t; u++) {
       let m;
       e ? m = L(p, e, i) : m = A(p, i), console.log(
         `Turning ${m.login} into an ADML of ${o.id} - ${o.name}`
-      ), Y(m, o, s), i.push(m);
+      ), Y(m, o, n), i.push(m);
     }
   }
   return i.slice(0, t);
 }
 const C = __ENV.ROOT_URL;
 function W(o, e) {
-  let t = n.get(`${C}/appregistry/roles`, {
+  let t = s.get(`${C}/appregistry/roles`, {
     headers: l(e)
   });
-  return JSON.parse(t.body).filter((s) => s.name === o)[0];
+  return JSON.parse(t.body).filter((n) => n.name === o)[0];
 }
 function De(o, e) {
   const t = `${o} - All - Stress Test`;
@@ -492,12 +492,12 @@ function De(o, e) {
   if (r)
     console.log(`Role ${t} already existed`);
   else {
-    let s = n.get(
+    let n = s.get(
       `${C}/appregistry/applications/actions?actionType=WORKFLOW`,
       { headers: l(e) }
     );
-    f(s, { "get workflow actions": (u) => u.status == 200 });
-    const a = JSON.parse(s.body).filter(
+    f(n, { "get workflow actions": (u) => u.status == 200 });
+    const a = JSON.parse(n.body).filter(
       (u) => u.name === o
     )[0].actions.map((u) => u[0]), i = l(e);
     i["content-type"] = "application/json";
@@ -505,21 +505,21 @@ function De(o, e) {
       role: t,
       actions: a
     };
-    s = n.post(`${C}/appregistry/role`, JSON.stringify(p), {
+    n = s.post(`${C}/appregistry/role`, JSON.stringify(p), {
       headers: i
-    }), console.log(s), f(s, { "save role ok": (u) => u.status == 201 }), r = W(t, e);
+    }), console.log(n), f(n, { "save role ok": (u) => u.status == 201 }), r = W(t, e);
   }
   return r;
 }
 function D(o, e) {
   const t = l(e);
   t["Accept-Language"] = "en";
-  let r = n.get(
+  let r = s.get(
     `${C}/appregistry/groups/roles?structureId=${o}&translate=false`,
     { headers: t }
   );
   return f(r, {
-    "get structure roles should be ok": (s) => s.status == 200
+    "get structure roles should be ok": (n) => n.status == 200
   }), JSON.parse(r.body);
 }
 const Q = __ENV.ROOT_URL, Ne = [
@@ -570,24 +570,24 @@ const Q = __ENV.ROOT_URL, Ne = [
 function Ue(o, e) {
   let t = l(e);
   const r = new S();
-  r.append("file", n.file(o, "file.txt")), t["Content-Type"] = "multipart/form-data; boundary=" + r.boundary;
-  let s = n.post(`${Q}/workspace/document`, r.body(), { headers: t });
-  return f(s, {
+  r.append("file", s.file(o, "file.txt")), t["Content-Type"] = "multipart/form-data; boundary=" + r.boundary;
+  let n = s.post(`${Q}/workspace/document`, r.body(), { headers: t });
+  return f(n, {
     "upload doc ok": (c) => c.status === 201
-  }), JSON.parse(s.body);
+  }), JSON.parse(n.body);
 }
 const Z = __ENV.ROOT_URL;
 function Je(o, e, t) {
   const r = l(t);
   r["content-type"] = "application/json";
-  const s = JSON.stringify(e);
-  return n.put(`${Z}/workspace/share/resource/${o}`, s, {
+  const n = JSON.stringify(e);
+  return s.put(`${Z}/workspace/share/resource/${o}`, n, {
     headers: r
   });
 }
 const ee = __ENV.ROOT_URL;
 function xe(o, e, t) {
-  const r = n.post(
+  const r = s.post(
     `${ee}/communication/v2/group/${o}/communique/${e}`,
     "{}",
     { headers: l(t) }
@@ -609,8 +609,8 @@ function Le(o, e, t = 500) {
 function Pe(o, e, t = 500) {
   const r = {};
   return r[`${e} (expects ${t})`] = () => {
-    const s = o && o.status === t;
-    return s || (console.warn("Expected ", t, " but got ", o.status), console.warn(o)), s;
+    const n = o && o.status === t;
+    return n || (console.warn("Expected ", t, " but got ", o.status), console.warn(o)), n;
   }, f({}, r);
 }
 function te(o, e) {
@@ -619,7 +619,7 @@ function te(o, e) {
 }
 const re = __ENV.ROOT_URL;
 function Fe(o) {
-  let e = n.get(`${re}/userbook/search/criteria`, {
+  let e = s.get(`${re}/userbook/search/criteria`, {
     headers: l(o)
   });
   return JSON.parse(e.body);
