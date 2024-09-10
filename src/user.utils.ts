@@ -51,7 +51,7 @@ export const authenticateWeb = function (login: string, pwd?: string) {
   jar.clear(rootUrl);
   let credentials = {
     email: login,
-    password: pwd || __ENV.DEFAULT_PASSWORD,
+    password: pwd || __ENV.DEFAULT_PASSWORD || "password",
     callBack: "",
     detail: "",
   };

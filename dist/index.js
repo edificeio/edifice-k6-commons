@@ -51,7 +51,7 @@ const J = __ENV.BASE_URL, x = 30 * 60, g = __ENV.ROOT_URL, l = function(o) {
   t.clear(g);
   let r = {
     email: o,
-    password: e || __ENV.DEFAULT_PASSWORD,
+    password: e || __ENV.DEFAULT_PASSWORD || "password",
     callBack: "",
     detail: ""
   };
