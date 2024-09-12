@@ -151,6 +151,25 @@ export function createEmptyStructure(
   return structure;
 }
 
+export function createEmptyStructureNoCheck(
+  structureName: string,
+  hasApp: boolean,
+  session: Session,
+): any {
+  const headers = getHeaders(session);
+  headers["content-type"] = "application/json";
+  const payload = JSON.stringify({
+    hasApp,
+    name: structureName,
+  });
+  let res = http.post(`${rootUrl}/directory/school`, payload, headers);
+  if (res.status !== 201) {
+    console.error(res.body);
+    fail(`Could not create structure ${structureName}`);
+  }
+  return res;
+}
+
 /**
  * Create a structure with a default set of teachers, parents and students
  * and activate the users.
@@ -330,6 +349,17 @@ export function createPosition(
     structureId: structure.id,
   });
   let res = http.post(`${rootUrl}/directory/positions`, payload, {
+    redirects: 0,
+    headers,
+  });
+  return res;
+}
+
+export function updatePosition(position: UserPosition, session?: Session) {
+  const headers = getHeaders(session);
+  headers["content-type"] = "application/json";
+  const payload = JSON.stringify(position);
+  let res = http.put(`${rootUrl}/directory/positions/${position.id}`, payload, {
     redirects: 0,
     headers,
   });

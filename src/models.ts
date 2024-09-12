@@ -109,6 +109,7 @@ export type UserPosition = {
   id: string;
   name: string;
   structureId: string;
+  source: string;
 };
 
 export type UserbookSearchCriteria = {
