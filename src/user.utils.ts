@@ -1,6 +1,12 @@
 import http from "k6/http";
 import { check, fail } from "k6";
-import { Cookie, Session, SessionMode, UserInfo } from "./models";
+import {
+  Cookie,
+  Session,
+  SessionMode,
+  UserCreationRequest,
+  UserInfo,
+} from "./models";
 
 const THIRTY_MINUTES_IN_SECONDS = 30 * 60;
 
@@ -181,4 +187,16 @@ export function getUserProfileOrFail(id: string, session: Session): UserInfo {
     fail(`Could not get user profile`);
   }
   return JSON.parse(<string>res.body);
+}
+
+export function createUser(
+  userCreationRequest: UserCreationRequest,
+  session: Session,
+) {
+  const payload = <any>userCreationRequest;
+  const headers = getHeaders(session);
+  headers["content-type"] = "application/x-www-form-urlencoded;charset=UTF-8";
+  return http.post(`${rootUrl}/directory/api/user`, payload, {
+    headers,
+  });
 }

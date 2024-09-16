@@ -144,3 +144,12 @@ export type UserInfo = {
 };
 
 export type StructureFlavour = "default" | "tiny";
+
+export type UserCreationRequest = {
+  firstName: string;
+  lastName: string;
+  type: string;
+  structureId: string;
+  birthDate: string;
+  positionIds: string[];
+};
