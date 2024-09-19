@@ -444,6 +444,18 @@ export function searchPositions(content: string, session: Session) {
   return http.get(url.toString(), { headers });
 }
 
+export function getPositionsOfStructure(
+  structure: Structure,
+  session: Session,
+) {
+  const headers = getHeaders(session);
+  const res = http.get(
+    `${rootUrl}/directory/positions?structureId=${structure.id}`,
+    { headers },
+  );
+  return JSON.parse(<string>res.body);
+}
+
 export function makeAdml(user: any, structure: Structure, session: Session) {
   const headers = getHeaders(session);
   headers["content-type"] = "application/json";
