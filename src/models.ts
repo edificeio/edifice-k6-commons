@@ -153,3 +153,8 @@ export type UserCreationRequest = {
   birthDate: string;
   positionIds: string[];
 };
+
+export type StructureImportParameters = {
+  predelete?: boolean;
+  transition?: boolean;
+};
