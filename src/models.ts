@@ -141,6 +141,7 @@ export type UserInfo = {
   lastName: string;
   source: string;
   userPositions: string[];
+  structures: IdAndName[];
 };
 
 export type StructureFlavour = "default" | "tiny";
@@ -157,4 +158,12 @@ export type UserCreationRequest = {
 export type StructureImportParameters = {
   predelete?: boolean;
   transition?: boolean;
+};
+
+export type Group = {
+  id: string;
+  name: string;
+  filter: string;
+  internalCommunicationRule: string;
+  structures: IdAndName[];
 };

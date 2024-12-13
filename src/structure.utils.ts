@@ -266,6 +266,7 @@ export function attachStructureAsChild(
   parentStructure: Structure,
   childStructure: Structure,
   session: Session,
+  nbRetry: number = 0,
 ): boolean {
   let added: boolean;
   const parentIds = (childStructure.parents || []).map((p) => p.id);
@@ -282,9 +283,23 @@ export function attachStructureAsChild(
       "{}",
     );
     if (res.status !== 200) {
-      fail(
-        `Could not attach structure ${childStructure.name} as a child of ${parentStructure.name}`,
-      );
+      if (nbRetry > 0) {
+        console.log(
+          "Retrying to attach structure as a child because we got ",
+          res.status,
+          res.body,
+        );
+        attachStructureAsChild(
+          parentStructure,
+          childStructure,
+          session,
+          nbRetry - 1,
+        );
+      } else {
+        fail(
+          `Could not attach structure ${childStructure.name} as a child of ${parentStructure.name}`,
+        );
+      }
     }
     added = true;
   }
@@ -474,6 +489,27 @@ export function makeAdml(user: any, structure: Structure, session: Session) {
   return res;
 }
 
+export function makeAdmlOfStructures(
+  user: any,
+  structureIds: string[],
+  session: Session,
+) {
+  const headers = getHeaders(session);
+  headers["content-type"] = "application/json";
+  const payload = JSON.stringify({
+    functionCode: "ADMIN_LOCAL",
+    inherit: "s",
+    scope: structureIds,
+  });
+  let res = http.post(
+    `${rootUrl}/directory/user/function/${user.id}`,
+    payload,
+    { headers },
+  );
+  assertOk(res, "user should be made ADML");
+  return res;
+}
+
 /**
  * Search nbAdmls ADML of the structure. If less than nbAdmls ADML are
  * found, the remainder is created from existing users of the structure
@@ -537,20 +573,40 @@ export function getAdmlsOrMakThem(
   return admlUsers.slice(0, nbAdmls);
 }
 
+export function makeEverybodyAdml(
+  fromStructure: Structure,
+  structureIds: string[],
+  session: Session,
+) {
+  const usersOfStructure = getUsersOfSchool(fromStructure, session);
+  console.log(`ADMLization of ${usersOfStructure.length} users...`);
+  let i = 0;
+  for (let userToMake of usersOfStructure) {
+    makeAdmlOfStructures(userToMake, structureIds, session);
+    i++;
+    console.log(`${i} users adml-ized`);
+  }
+  console.log(`....ADMLization of ${usersOfStructure.length} users done`);
+}
+
 export function attachUserToStructures(
   user: UserInfo,
   structures: Structure | Structure[],
   session?: Session,
 ) {
   try {
-    const _session = authenticateWeb(__ENV.ADMC_LOGIN, __ENV.ADMC_PASSWORD)!;
+    const userStructures = new Set(user.structures.map((s) => s.id));
+    const _session =
+      session || authenticateWeb(__ENV.ADMC_LOGIN, __ENV.ADMC_PASSWORD)!;
     const _structures = Array.isArray(structures) ? structures : [structures];
     for (let structure of _structures) {
-      http.put(
-        `${rootUrl}/directory/structure/${structure.id}/link/${user.id}`,
-        null,
-        { headers: getHeaders(_session) },
-      );
+      if (!userStructures.has(structure.id)) {
+        http.put(
+          `${rootUrl}/directory/structure/${structure.id}/link/${user.id}`,
+          null,
+          { headers: getHeaders(_session) },
+        );
+      }
     }
   } finally {
     switchSession(session);
@@ -599,4 +655,37 @@ export function importCSVToStructure(
   const params = { headers };
   //@ts-ignore
   return http.post(`${rootUrl}/directory/wizard/import`, fd.body(), params);
+}
+
+export function applyCommRules(structures: Structure[], session: Session) {
+  const headers = getHeaders(session);
+  headers["content-type"] = "application/json";
+  console.log("initializing communication rules...");
+  let res = http.put(
+    `${rootUrl}/communication/init/rules`,
+    JSON.stringify({ structures: structures.map((s) => s.id) }),
+    { headers },
+  );
+  if (res.status === 200) {
+    console.log(`Initializing ${structures.length} structures....`);
+    let i = 0;
+    for (let structure of structures) {
+      let res = http.put(
+        `${rootUrl}/communication/rules/${structure.id}`,
+        JSON.stringify({ structures: structures.map((s) => s.id) }),
+        { headers },
+      );
+      if (res.status !== 200) {
+        console.log(
+          `... initialization failed for structure ${structure.id} - ${structure.name}`,
+        );
+      }
+      i++;
+      if (i % 20 === 0) {
+        console.log(`${i} structures initialized...`);
+      }
+    }
+  } else {
+    console.log("... initialization failed");
+  }
 }

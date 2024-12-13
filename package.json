@@ -22,7 +22,7 @@
     ".": {
       "require": "./dist/index.cjs",
       "import": "./dist/index.js",
-      "types": "./dist/index.d.ts"
+      "types": "./dist/types/index.d.ts"
     }
   },
   "main": "dist/index.cjs",
@@ -34,19 +34,22 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
+    "build:types": "tsc --build",
     "preview": "vite preview",
     "prepare": "husky",
+    "clean": "rm -Rf dist",
     "format": "pnpm run format:write && pnpm run format:check",
     "format:check": "npx prettier --check \"src/**/*.ts\"",
     "format:write": "npx prettier --write \"src/**/*.ts\""
   },
   "devDependencies": {
-    "@types/k6": "^0.49.0",
+    "@types/k6": "^0.49.3",
     "@types/node": "^20.11.21",
     "husky": "^9.0.11",
     "prettier": "^3.2.5",
     "semantic-release": "^23.0.2",
     "typescript": "^5.2.2",
-    "vite": "^5.1.4"
+    "vite": "^5.1.4",
+    "vite-plugin-dts": "^4.3.0"
   }
 }

@@ -15,7 +15,7 @@ const rootUrl = __ENV.ROOT_URL;
 export const getHeaders = function (session?: Session): {
   [name: string]: string;
 } {
-  let headers;
+  let headers: any = {};
   if (session) {
     if (session.mode === SessionMode.COOKIE) {
       headers = { "x-xsrf-token": session.getCookie("XSRF-TOKEN") || "" };
@@ -26,6 +26,10 @@ export const getHeaders = function (session?: Session): {
     }
   } else {
     headers = {};
+  }
+  if (__ENV.REQUEST_TIMEOUT) {
+    headers.requestTimeout = __ENV.REQUEST_TIMEOUT;
+    headers.timeout = __ENV.REQUEST_TIMEOUT;
   }
   return headers;
 };
