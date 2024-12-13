@@ -42,10 +42,8 @@ docker compose run --rm k6 run file:///home/k6/src/it/scenarios/position/attribu
 
 ## Publication
 
-### Sur main
-
-Modifier le numéro de version dans package.json puis exécuter la commande suivaten.
+Depuis les branches `main`, `develop` ou `develop-*` (branche de squad) modifier le numéro de version dans package.json puis exécuter la commande suivante.
 
 ```shell
-pnpm publish --tag latest --no-git-checks --access public
+./build.sh publish
 ```
