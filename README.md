@@ -39,3 +39,13 @@ mkdir -p tests/src/test/js/commons
 cp $PROJECTS_DIR/edifice-k6-commons/dist/index.js tests/src/test/js/commons/index.js
 docker compose run --rm k6 run file:///home/k6/src/it/scenarios/position/attribute-position.js
 ```
+
+## Publication
+
+### Sur main
+
+Modifier le numéro de version dans package.json puis exécuter la commande suivaten.
+
+```shell
+pnpm publish --tag latest --no-git-checks --access public
+```
