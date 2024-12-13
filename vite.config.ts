@@ -20,7 +20,7 @@ export default defineConfig({
   plugins: [
     dts({
       insertTypesEntry: true, // Ensures a types entry is added to package.json
-      outDir: 'dist/types', // Directory for type definitions
+      outDir: 'dist', // Directory for type definitions
     }),
   ],
 })
