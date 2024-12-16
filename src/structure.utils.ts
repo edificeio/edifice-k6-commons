@@ -191,7 +191,7 @@ export function initStructure(
   return structure;
 }
 /**
- * Creates a structure with teachers, students and relatives in it. 
+ * Creates a structure with teachers, students and relatives in it.
  * @param structureName Name of the structure to create (leave blank to use the default name)
  * @param flavour The type of structure to create (the main/only difference being the number of users in it)
  * @returns the created structure
