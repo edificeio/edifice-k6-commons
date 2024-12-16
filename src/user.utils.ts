@@ -158,12 +158,17 @@ export function getRandomUser<T extends Identified>(
   exceptUsers: Identified[] = [],
 ): T {
   const idToAvoid = (exceptUsers || []).map((u) => u.id);
-  for (let i = 0; i < 1000; i++) {
+  for (let i = 0; i < 1000; i++) 
+    {
     const user = arrayOfUsers[Math.floor(Math.random() * arrayOfUsers.length)];
-    if (idToAvoid.indexOf(user.id) < 0) {
+    if (idToAvoid.indexOf(user.id) < 0) 
+      {
       return user;
     }
   }
+
+
+
   throw "cannot.find.random.user";
 }
 

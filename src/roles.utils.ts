@@ -16,6 +16,7 @@ export type RoleOfStructure = {
   roles: string[];
 };
 
+
 export function getRoleByName(name: string, session: Session): Role {
   let roles = http.get(`${rootUrl}/appregistry/roles`, {
     headers: getHeaders(session),
@@ -23,7 +24,12 @@ export function getRoleByName(name: string, session: Session): Role {
   const result = JSON.parse(<string>roles.body);
   return result.filter((role: { name: string }) => role.name === name)[0];
 }
-
+/**
+ * 
+ * @param applicationName Name of the application for which to create a role
+ * @param session Session of the user creating the role
+ * @returns Created role
+ */
 export function createAndSetRole(
   applicationName: string,
   session: Session,
