@@ -25,6 +25,7 @@ import {
   StructureInitData,
   UserInfo,
   UserPosition,
+  UserProfileType,
 } from "./models";
 //@ts-ignore
 import { URL } from "https://jslib.k6.io/url/1.0.0/index.js";
@@ -43,7 +44,10 @@ export function getSchoolByName(name: string, session: Session): Structure {
   )[0];
 }
 
-export function getUsersOfSchool(school: Structure, session: Session) {
+export function getUsersOfSchool(
+  school: Structure,
+  session: Session,
+): UserInfo[] {
   let res = http.get(`${rootUrl}/directory/structure/${school.id}/users`, {
     headers: getHeaders(session),
   });
@@ -190,7 +194,7 @@ export function initStructure(
 export function createDefaultStructure(
   structureName: string,
   flavour: StructureFlavour = "default",
-) {
+): Structure {
   const name = structureName || "General";
   const session = authenticateWeb(__ENV.ADMC_LOGIN, __ENV.ADMC_PASSWORD);
   const baseUrl = `https://raw.githubusercontent.com/edificeio/edifice-k6-commons/develop/data/structure`;
@@ -218,7 +222,7 @@ export function createStructure(
   schoolName: string,
   users: bytes | StructureInitData,
   session: Session,
-) {
+): Structure {
   let ecoleAudience = getSchoolByName(schoolName, session);
   if (ecoleAudience) {
     console.log("School already exists");
@@ -463,7 +467,7 @@ export function searchPositions(content: string, session: Session) {
 export function getPositionsOfStructure(
   structure: Structure,
   session: Session,
-) {
+): UserPosition[] {
   const headers = getHeaders(session);
   const res = http.get(
     `${rootUrl}/directory/positions?structureId=${structure.id}`,
@@ -524,7 +528,7 @@ export function makeAdmlOfStructures(
  */
 export function getAdmlsOrMakThem(
   structure: Structure,
-  profile: string,
+  profile: UserProfileType,
   nbAdmls: number,
   excludedUsers: { id: string }[],
   session: Session,

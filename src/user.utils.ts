@@ -2,10 +2,12 @@ import http from "k6/http";
 import { check, fail } from "k6";
 import {
   Cookie,
+  Identified,
   Session,
   SessionMode,
   UserCreationRequest,
   UserInfo,
+  UserProfileType,
 } from "./models";
 
 const THIRTY_MINUTES_IN_SECONDS = 30 * 60;
@@ -145,10 +147,16 @@ export const authenticateOAuth2 = function (
   );
 };
 
-export function getRandomUser(
-  arrayOfUsers: { id: string }[],
-  exceptUsers: { id: string }[],
-) {
+/**
+ *
+ * @param arrayOfUsers User array from which to pick the user to return
+ * @param exceptUsers A list of users to avoid
+ * @returns A randomly picked user from arrayOfUsers who is no in exceptUsers
+ */
+export function getRandomUser<T extends Identified>(
+  arrayOfUsers: T[],
+  exceptUsers: Identified[] = [],
+): T {
   const idToAvoid = (exceptUsers || []).map((u) => u.id);
   for (let i = 0; i < 1000; i++) {
     const user = arrayOfUsers[Math.floor(Math.random() * arrayOfUsers.length)];
@@ -159,11 +167,20 @@ export function getRandomUser(
   throw "cannot.find.random.user";
 }
 
-export function getRandomUserWithProfile(
-  arrayOfUsers: { id: string; type: string }[],
-  profileGroup: string,
-  exceptUsers: { id: string }[],
-) {
+/**
+ *
+ * @param arrayOfUsers User array from which to pick the user to return
+ * @param exceptUsers A list of users to avoid
+ * @param profileGroup Name of the profile of the user to pick
+ * @returns A randomly picked user from arrayOfUsers who is no in exceptUsers
+ */
+export function getRandomUserWithProfile<
+  T extends { id: string; type: UserProfileType },
+>(
+  arrayOfUsers: T[],
+  profileGroup: UserProfileType,
+  exceptUsers: Identified[] = [],
+): T {
   const usersOfGroup = arrayOfUsers.filter((u) => u.type === profileGroup);
   return getRandomUser(usersOfGroup, exceptUsers);
 }

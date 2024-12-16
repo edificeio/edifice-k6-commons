@@ -136,12 +136,19 @@ export type UserInfo = {
   id: string;
   externalId: string;
   login: string;
-  type: string;
+  type: UserProfileType;
   firstName: string;
   lastName: string;
   source: string;
   userPositions: string[];
   structures: IdAndName[];
+  classes: StructureClass[];
+};
+
+export type StructureClass = {
+  id: string;
+  externalId: string;
+  name: string;
 };
 
 export type StructureFlavour = "default" | "tiny";
@@ -167,3 +174,8 @@ export type Group = {
   internalCommunicationRule: string;
   structures: IdAndName[];
 };
+export type Identified = {
+  id: string;
+};
+
+export type UserProfileType = "Teacher" | "Relative" | "Guest" | "Student";
