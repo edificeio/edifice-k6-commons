@@ -9,15 +9,17 @@ import {
   UserInfo,
   UserProfileType,
 } from "./models";
+import sessionHolder from "./session.utils";
 
 const THIRTY_MINUTES_IN_SECONDS = 30 * 60;
 
 const rootUrl = __ENV.ROOT_URL;
 
-export const getHeaders = function (session?: Session): {
+export const getHeaders = function (): {
   [name: string]: string;
 } {
   let headers: any = {};
+  const session = sessionHolder.session;
   if (session) {
     if (session.mode === SessionMode.COOKIE) {
       headers = { "x-xsrf-token": session.getCookie("XSRF-TOKEN") || "" };
@@ -36,9 +38,9 @@ export const getHeaders = function (session?: Session): {
   return headers;
 };
 
-export const searchUser = function (q: string, session: Session): string {
+export const searchUser = function (q: string): string {
   const response = http.get(`${rootUrl}/conversation/visible?search=${q}`, {
-    headers: getHeaders(session),
+    headers: getHeaders(),
   });
   check(response, {
     "should get an OK response": (r) => r.status == 200,
@@ -47,9 +49,9 @@ export const searchUser = function (q: string, session: Session): string {
   return users[0].id;
 };
 
-export const getConnectedUserId = function (session: Session) {
+export const getConnectedUserId = function () {
   const response = http.get(`${rootUrl}/auth/oauth2/userinfo`, {
-    headers: getHeaders(session),
+    headers: getHeaders(),
   });
   check(response, {
     "should get an OK response": (r) => r.status == 200,
@@ -80,31 +82,43 @@ export const authenticateWeb = function (login: string, pwd?: string) {
   ) {
     fail("login process should have set an auth cookie");
   }
-  if (!response.cookies["oneSessionId"]) {
+  let session: Session | null;
+  if (response.cookies["oneSessionId"]) {
+    jar.set(rootUrl, "oneSessionId", response.cookies["oneSessionId"][0].value);
+    const cookies: Cookie[] = Object.keys(response.cookies).map(
+      (cookieName) => {
+        return {
+          name: cookieName,
+          value: response.cookies[cookieName][0].value,
+        };
+      },
+    );
+    session = new Session(
+      response.cookies["oneSessionId"][0].value,
+      SessionMode.COOKIE,
+      THIRTY_MINUTES_IN_SECONDS,
+      cookies,
+    );
+  } else {
     console.error(`Could not get oneSessionId for ${login}`);
-    return null;
+    session = null;
   }
-  jar.set(rootUrl, "oneSessionId", response.cookies["oneSessionId"][0].value);
-  const cookies: Cookie[] = Object.keys(response.cookies).map((cookieName) => {
-    return { name: cookieName, value: response.cookies[cookieName][0].value };
-  });
-  return new Session(
-    response.cookies["oneSessionId"][0].value,
-    SessionMode.COOKIE,
-    THIRTY_MINUTES_IN_SECONDS,
-    cookies,
-  );
+  sessionHolder.session = session;
+  return session;
 };
 
-export const logout = function (session: Session) {
+export const logout = function () {
   const res = http.get(`${rootUrl}/auth/logout?callback=/`, {
-    headers: getHeaders(session),
+    headers: getHeaders(),
   });
   http.cookieJar().clear(rootUrl);
+  sessionHolder.session = null;
   return res;
 };
 
-export const switchSession = function (session?: Session): Session | undefined {
+export const switchSession = function (
+  session: Session | null,
+): Session | null {
   const jar = http.cookieJar();
   if (session) {
     jar.set(rootUrl, "oneSessionId", session.token);
@@ -113,6 +127,7 @@ export const switchSession = function (session?: Session): Session | undefined {
     jar.delete(rootUrl, "oneSessionId");
     jar.delete(rootUrl, "XSRF-TOKEN");
   }
+  sessionHolder.session = session || null;
   return session;
 };
 
@@ -140,11 +155,12 @@ export const authenticateOAuth2 = function (
     "should have set an access token": (r) => !!r.json("access_token"),
   });
   const accessToken = <string>response.json("access_token");
-  return new Session(
+  const session = new Session(
     accessToken,
     SessionMode.OAUTH2,
     <number>response.json("expires_in"),
   );
+  sessionHolder.session = session;
 };
 
 /**
@@ -200,9 +216,9 @@ export function checkStatus(
   return ok;
 }
 
-export function getUserProfileOrFail(id: string, session: Session): UserInfo {
+export function getUserProfileOrFail(id: string): UserInfo {
   let res = http.get(`${rootUrl}/directory/user/${id}?manual-groups=true`, {
-    headers: getHeaders(session),
+    headers: getHeaders(),
   });
   if (res.status !== 200) {
     console.error(res);
@@ -211,12 +227,9 @@ export function getUserProfileOrFail(id: string, session: Session): UserInfo {
   return JSON.parse(<string>res.body);
 }
 
-export function createUser(
-  userCreationRequest: UserCreationRequest,
-  session: Session,
-) {
+export function createUser(userCreationRequest: UserCreationRequest) {
   const payload = <any>userCreationRequest;
-  const headers = getHeaders(session);
+  const headers = getHeaders();
   headers["content-type"] = "application/x-www-form-urlencoded;charset=UTF-8";
   return http.post(`${rootUrl}/directory/api/user`, payload, {
     headers,

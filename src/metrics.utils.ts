@@ -2,11 +2,10 @@ import http from "k6/http";
 import { check } from "k6";
 import { getHeaders } from "./user.utils.js";
 import { BASE_URL } from "./env.utils.js";
-import { Session } from "./models";
 
-export const getMetricValue = function (metricName: string, session: Session) {
+export const getMetricValue = function (metricName: string) {
   const response = http.get(`${BASE_URL}/metrics`, {
-    headers: getHeaders(session),
+    headers: getHeaders(),
   });
   check(response, {
     "should get an OK response": (r) => r.status == 200,

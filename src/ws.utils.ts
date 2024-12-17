@@ -1,6 +1,5 @@
 import http from "k6/http";
 import { getHeaders } from "./user.utils";
-import { Session } from ".";
 import { check, bytes } from "k6";
 //@ts-ignore
 import { FormData } from "https://jslib.k6.io/formdata/0.0.2/index.js";
@@ -55,8 +54,8 @@ export const WS_READER_SHARE = [
   "org-entcore-workspace-controllers-WorkspaceController|commentDocument",
 ];
 
-export function uploadFile(fileData: bytes, session: Session): WorkspaceFile {
-  let headers = getHeaders(session);
+export function uploadFile(fileData: bytes): WorkspaceFile {
+  let headers = getHeaders();
   const fd = new FormData();
   //@ts-ignore
   fd.append("file", http.file(fileData, "file.txt"));

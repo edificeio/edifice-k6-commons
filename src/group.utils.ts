@@ -3,7 +3,6 @@ import { getHeaders } from "./user.utils";
 import {
   BroadcastGroup,
   ProfileGroup,
-  Session,
   Structure,
   UserInfo,
   getRolesOfStructure,
@@ -17,14 +16,13 @@ export const ADML_FILTER = "AdminLocal";
 export function createBroadcastGroup(
   broadcastListName: string,
   school: Structure,
-  session: Session,
 ): BroadcastGroup {
-  let broadcastGroup = getBroadcastGroup(broadcastListName, school, session);
+  let broadcastGroup = getBroadcastGroup(broadcastListName, school);
   if (broadcastGroup) {
     console.log("Broadcast group already existed");
   } else {
     console.log("Creating broadcast group");
-    const headers = getHeaders(session);
+    const headers = getHeaders();
     headers["content-type"] = "application/json";
     let payload = JSON.stringify({
       name: broadcastListName,
@@ -46,19 +44,15 @@ export function createBroadcastGroup(
     check(res, {
       "set broadcast group for teachers": (r) => r.status === 200,
     });
-    const teacherGroupId = getTeacherRole(school, session).id;
-    addCommRuleToGroup(blId, [teacherGroupId], session);
-    broadcastGroup = getBroadcastGroup(broadcastListName, school, session);
+    const teacherGroupId = getTeacherRole(school).id;
+    addCommRuleToGroup(blId, [teacherGroupId]);
+    broadcastGroup = getBroadcastGroup(broadcastListName, school);
   }
   return broadcastGroup;
 }
 
-export function addCommRuleToGroup(
-  groupId: string,
-  fromGroupIds: string[],
-  session: Session,
-) {
-  const headers = getHeaders(session);
+export function addCommRuleToGroup(groupId: string, fromGroupIds: string[]) {
+  const headers = getHeaders();
   headers["content-type"] = "application/json";
   for (let fromGroupId of fromGroupIds) {
     let res = http.post(
@@ -73,24 +67,23 @@ export function addCommRuleToGroup(
   }
 }
 
-export function getTeacherRole(structure: Structure, session: Session) {
-  return getProfileGroupOfStructure("teachers", structure, session);
+export function getTeacherRole(structure: Structure) {
+  return getProfileGroupOfStructure("teachers", structure);
 }
 
-export function getStudentRole(structure: Structure, session: Session) {
-  return getProfileGroupOfStructure("students", structure, session);
+export function getStudentRole(structure: Structure) {
+  return getProfileGroupOfStructure("students", structure);
 }
 
-export function getParentRole(structure: Structure, session: Session) {
-  return getProfileGroupOfStructure("relatives", structure, session);
+export function getParentRole(structure: Structure) {
+  return getProfileGroupOfStructure("relatives", structure);
 }
 
 export function getProfileGroupOfStructure(
   profileGroupName: string,
   structure: Structure,
-  session: Session,
 ) {
-  const roles = getRolesOfStructure(structure.id, session);
+  const roles = getRolesOfStructure(structure.id);
   return roles.filter((role) => {
     const lowerName = role.name.toLowerCase();
     return (
@@ -110,9 +103,8 @@ export function getProfileGroupOfStructure(
  */
 export function getProfileGroupsOfStructure(
   structureId: string,
-  session: Session,
 ): ProfileGroup[] {
-  const headers = getHeaders(session);
+  const headers = getHeaders();
   headers["Accept-Language"] = "en";
   let res = http.get(
     `${rootUrl}/directory/group/admin/list?structureId=${structureId}&translate=false`,
@@ -127,9 +119,8 @@ export function getProfileGroupsOfStructure(
 export function getBroadcastGroup(
   broadcastListName: string,
   school: Structure,
-  session: Session,
 ): BroadcastGroup {
-  const headers = getHeaders(session);
+  const headers = getHeaders();
   headers["content-type"] = "application/json";
   let res = http.get(
     `${rootUrl}/directory/group/admin/list?translate=false&structureId=${school.id}`,
@@ -146,8 +137,8 @@ export function getBroadcastGroup(
  * @param session Session of the requester
  * @returns List of the users belonging to the specified group
  */
-export function getUsersOfGroup(groupId: string, session: Session): UserInfo[] {
-  const headers = getHeaders(session);
+export function getUsersOfGroup(groupId: string): UserInfo[] {
+  const headers = getHeaders();
   headers["content-type"] = "application/json";
   let res = http.get(
     `${rootUrl}/directory/user/admin/list?groupId=${groupId}`,

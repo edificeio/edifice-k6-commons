@@ -1,7 +1,6 @@
 import http from "k6/http";
 import { check } from "k6";
 import { getHeaders } from "./user.utils";
-import { Session } from "./models";
 
 const rootUrl = __ENV.ROOT_URL;
 
@@ -16,9 +15,9 @@ export type RoleOfStructure = {
   roles: string[];
 };
 
-export function getRoleByName(name: string, session: Session): Role {
+export function getRoleByName(name: string): Role {
   let roles = http.get(`${rootUrl}/appregistry/roles`, {
-    headers: getHeaders(session),
+    headers: getHeaders(),
   });
   const result = JSON.parse(<string>roles.body);
   return result.filter((role: { name: string }) => role.name === name)[0];
@@ -29,25 +28,22 @@ export function getRoleByName(name: string, session: Session): Role {
  * @param session Session of the user creating the role
  * @returns Created role
  */
-export function createAndSetRole(
-  applicationName: string,
-  session: Session,
-): Role {
+export function createAndSetRole(applicationName: string): Role {
   const roleName = `${applicationName} - All - Stress Test`;
-  let role = getRoleByName(roleName, session);
+  let role = getRoleByName(roleName);
   if (role) {
     console.log(`Role ${roleName} already existed`);
   } else {
     let res = http.get(
       `${rootUrl}/appregistry/applications/actions?actionType=WORKFLOW`,
-      { headers: getHeaders(session) },
+      { headers: getHeaders() },
     );
     check(res, { "get workflow actions": (r) => r.status == 200 });
     const application = JSON.parse(<string>res.body).filter(
       (entry: { name: string }) => entry.name === applicationName,
     )[0];
     const actions = application.actions.map((entries: any) => entries[0]);
-    const headers = getHeaders(session);
+    const headers = getHeaders();
     headers["content-type"] = "application/json";
     const payload = {
       role: roleName,
@@ -58,16 +54,13 @@ export function createAndSetRole(
     });
     console.log(res);
     check(res, { "save role ok": (r) => r.status == 201 });
-    role = getRoleByName(roleName, session);
+    role = getRoleByName(roleName);
   }
   return role;
 }
 
-export function getRolesOfStructure(
-  structureId: string,
-  session: Session,
-): RoleOfStructure[] {
-  const headers = getHeaders(session);
+export function getRolesOfStructure(structureId: string): RoleOfStructure[] {
+  const headers = getHeaders();
   headers["Accept-Language"] = "en";
   let res = http.get(
     `${rootUrl}/appregistry/groups/roles?structureId=${structureId}&translate=false`,

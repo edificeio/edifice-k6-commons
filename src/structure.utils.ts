@@ -9,7 +9,6 @@ import {
 import {
   ADML_FILTER,
   Role,
-  Session,
   assertOk,
   getRolesOfStructure,
   getUsersOfGroup,
@@ -30,26 +29,24 @@ import {
 //@ts-ignore
 import { URL } from "https://jslib.k6.io/url/1.0.0/index.js";
 import { getProfileGroupsOfStructure } from "./group.utils";
+import sessionHolder from "./session.utils";
 
 const rootUrl = __ENV.ROOT_URL;
 const host = new URL(rootUrl).hostname;
 const password = __ENV.DEFAULT_PASSWORD || "password";
 
-export function getSchoolByName(name: string, session: Session): Structure {
+export function getSchoolByName(name: string): Structure {
   let ecoles = http.get(`${rootUrl}/directory/structure/admin/list`, {
-    headers: getHeaders(session),
+    headers: getHeaders(),
   });
   return JSON.parse(<string>ecoles.body).filter(
     (structure: Structure) => structure.name === name,
   )[0];
 }
 
-export function getUsersOfSchool(
-  school: Structure,
-  session: Session,
-): UserInfo[] {
+export function getUsersOfSchool(school: Structure): UserInfo[] {
   let res = http.get(`${rootUrl}/directory/structure/${school.id}/users`, {
-    headers: getHeaders(session),
+    headers: getHeaders(),
   });
   if (res.status !== 200) {
     throw `Impossible to get users of ${school.id}`;
@@ -57,9 +54,9 @@ export function getUsersOfSchool(
   return JSON.parse(<string>res.body);
 }
 
-export function activateUsers(structure: Structure, session: Session) {
+export function activateUsers(structure: Structure) {
   let res = http.get(`${rootUrl}/directory/structure/${structure.id}/users`, {
-    headers: getHeaders(session),
+    headers: getHeaders(),
   });
   if (res.status != 200) {
     fail(`Cannot fetch users of structure ${structure.id} : ${res}`);
@@ -96,9 +93,8 @@ export function linkRoleToUsers(
   structure: Structure,
   role: Role,
   groupNames: string[],
-  session: Session,
 ) {
-  const roles = getRolesOfStructure(structure.id, session);
+  const roles = getRolesOfStructure(structure.id);
   const teacherRoless = roles.filter(
     (role) => groupNames.indexOf(role.name) >= 0,
   );
@@ -106,7 +102,7 @@ export function linkRoleToUsers(
     if (teacherRoles.roles.indexOf(role.name) >= 0) {
       console.log("Role already attributed to teachers");
     } else {
-      const headers = getHeaders(session);
+      const headers = getHeaders();
       headers["content-type"] = "application/json";
       const params = { headers };
       const payload = JSON.stringify({
@@ -134,13 +130,12 @@ export function linkRoleToUsers(
 export function createEmptyStructure(
   structureName: string,
   hasApp: boolean,
-  session: Session,
 ): Structure {
-  let structure = getSchoolByName(structureName, session);
+  let structure = getSchoolByName(structureName);
   if (structure) {
     console.log(`Structure ${structureName} already exists`);
   } else {
-    const headers = getHeaders(session);
+    const headers = getHeaders();
     headers["content-type"] = "application/json";
     const payload = JSON.stringify({
       hasApp,
@@ -151,7 +146,7 @@ export function createEmptyStructure(
       console.error(res.body);
       fail(`Could not create structure ${structureName}`);
     }
-    structure = getSchoolByName(structureName, session);
+    structure = getSchoolByName(structureName);
   }
   return structure;
 }
@@ -159,9 +154,8 @@ export function createEmptyStructure(
 export function createEmptyStructureNoCheck(
   structureName: string,
   hasApp: boolean,
-  session: Session,
 ): any {
-  const headers = getHeaders(session);
+  const headers = getHeaders();
   headers["content-type"] = "application/json";
   const payload = JSON.stringify({
     hasApp,
@@ -185,9 +179,9 @@ export function initStructure(
   structureName: string,
   flavour: StructureFlavour = "default",
 ) {
-  const session = authenticateWeb(__ENV.ADMC_LOGIN, __ENV.ADMC_PASSWORD)!;
+  authenticateWeb(__ENV.ADMC_LOGIN, __ENV.ADMC_PASSWORD)!;
   const structure: Structure = createDefaultStructure(structureName, flavour);
-  activateUsers(structure, session);
+  activateUsers(structure);
   return structure;
 }
 /**
@@ -202,7 +196,7 @@ export function createDefaultStructure(
   flavour: StructureFlavour = "default",
 ): Structure {
   const name = structureName || "General";
-  const session = authenticateWeb(__ENV.ADMC_LOGIN, __ENV.ADMC_PASSWORD);
+  authenticateWeb(__ENV.ADMC_LOGIN, __ENV.ADMC_PASSWORD);
   const baseUrl = `https://raw.githubusercontent.com/edificeio/edifice-k6-commons/develop/data/structure`;
   const teachersData: bytes = <bytes>(
     http.get(`${baseUrl}/enseignants.${flavour}.csv`).body
@@ -213,23 +207,18 @@ export function createDefaultStructure(
   const responsablesData: bytes = <bytes>(
     http.get(`${baseUrl}/responsables.${flavour}.csv`).body
   );
-  return createStructure(
-    name,
-    {
-      teachers: teachersData,
-      students: studentsData,
-      responsables: responsablesData,
-    },
-    <Session>session,
-  );
+  return createStructure(name, {
+    teachers: teachersData,
+    students: studentsData,
+    responsables: responsablesData,
+  });
 }
 
 export function createStructure(
   schoolName: string,
   users: bytes | StructureInitData,
-  session: Session,
 ): Structure {
-  let ecoleAudience = getSchoolByName(schoolName, session);
+  let ecoleAudience = getSchoolByName(schoolName);
   if (ecoleAudience) {
     console.log("School already exists");
   } else {
@@ -254,7 +243,7 @@ export function createStructure(
     if (responsables) {
       fd.append("Relative", http.file(responsables, "responsables.csv"));
     }
-    const headers = getHeaders(session);
+    const headers = getHeaders();
     //@ts-ignore
     headers["Content-Type"] = "multipart/form-data; boundary=" + fd.boundary;
     const params = { headers };
@@ -267,7 +256,7 @@ export function createStructure(
     if (res.status != 200) {
       fail(`Could not create structure ${schoolName}`);
     }
-    ecoleAudience = getSchoolByName(schoolName, session);
+    ecoleAudience = getSchoolByName(schoolName);
   }
   return ecoleAudience;
 }
@@ -275,7 +264,6 @@ export function createStructure(
 export function attachStructureAsChild(
   parentStructure: Structure,
   childStructure: Structure,
-  session: Session,
   nbRetry: number = 0,
 ): boolean {
   let added: boolean;
@@ -286,7 +274,7 @@ export function attachStructureAsChild(
     );
     added = false;
   } else {
-    const headers = getHeaders(session);
+    const headers = getHeaders();
     headers["content-type"] = "application/json";
     let res = http.put(
       `${rootUrl}/directory/structure/${childStructure.id}/parent/${parentStructure.id}`,
@@ -299,12 +287,7 @@ export function attachStructureAsChild(
           res.status,
           res.body,
         );
-        attachStructureAsChild(
-          parentStructure,
-          childStructure,
-          session,
-          nbRetry - 1,
-        );
+        attachStructureAsChild(parentStructure, childStructure, nbRetry - 1);
       } else {
         fail(
           `Could not attach structure ${childStructure.name} as a child of ${parentStructure.name}`,
@@ -319,7 +302,6 @@ export function attachStructureAsChild(
 export function importUsers(
   structure: Structure,
   users: bytes | StructureInitData,
-  session: Session,
 ) {
   const fd = new FormData();
   fd.append("type", "CSV");
@@ -344,7 +326,7 @@ export function importUsers(
   if (responsables) {
     fd.append("Relative", http.file(responsables, "responsables.csv"));
   }
-  const headers = getHeaders(session);
+  const headers = getHeaders();
   //@ts-ignore
   headers["Content-Type"] = "multipart/form-data; boundary=" + fd.boundary;
   const params = { headers };
@@ -357,18 +339,14 @@ export function importUsers(
   return res;
 }
 
-export function triggerImport(session: Session) {
-  const headers = getHeaders(session);
+export function triggerImport() {
+  const headers = getHeaders();
   headers["content-type"] = "application/json";
   return http.post(`${rootUrl}/directory/import`, "{}", { headers });
 }
 
-export function createPosition(
-  positionName: string,
-  structure: Structure,
-  session?: Session,
-) {
-  const headers = getHeaders(session);
+export function createPosition(positionName: string, structure: Structure) {
+  const headers = getHeaders();
   headers["content-type"] = "application/json";
   const payload = JSON.stringify({
     name: positionName,
@@ -381,8 +359,8 @@ export function createPosition(
   return res;
 }
 
-export function updatePosition(position: UserPosition, session?: Session) {
-  const headers = getHeaders(session);
+export function updatePosition(position: UserPosition) {
+  const headers = getHeaders();
   headers["content-type"] = "application/json";
   const payload = JSON.stringify(position);
   let res = http.put(`${rootUrl}/directory/positions/${position.id}`, payload, {
@@ -394,14 +372,13 @@ export function updatePosition(position: UserPosition, session?: Session) {
 export function getOrCreatePosition(
   positionName: string,
   structure: Structure,
-  session?: Session,
 ): UserPosition {
-  let res = createPosition(positionName, structure, session);
+  let res = createPosition(positionName, structure);
   if (res.status === 409) {
     const existingPositionId: string = JSON.parse(
       <string>res.body,
     ).existingPositionId;
-    return getPositionByIdOrFail(existingPositionId, session);
+    return getPositionByIdOrFail(existingPositionId);
   } else {
     return JSON.parse(<string>res.body);
   }
@@ -410,9 +387,8 @@ export function getOrCreatePosition(
 export function attributePositions(
   user: { id: string },
   positions: UserPosition[],
-  session?: Session,
 ) {
-  const headers = getHeaders(session);
+  const headers = getHeaders();
   headers["content-type"] = "application/json";
   const payload: { positionIds?: string[] } = {};
   if (positions !== null && positions !== undefined) {
@@ -428,8 +404,8 @@ export function attributePositions(
   return res;
 }
 
-export function deletePosition(positionId: string, session?: Session) {
-  const headers = getHeaders(session);
+export function deletePosition(positionId: string) {
+  const headers = getHeaders();
   headers["content-type"] = "application/json";
   let res = http.del(`${rootUrl}/directory/positions/${positionId}`, null, {
     redirects: 0,
@@ -438,12 +414,9 @@ export function deletePosition(positionId: string, session?: Session) {
   return res;
 }
 
-export function getPositionByIdOrFail(
-  positionId: string,
-  session?: Session,
-): UserPosition {
+export function getPositionByIdOrFail(positionId: string): UserPosition {
   let position = http.get(`${rootUrl}/directory/positions/${positionId}`, {
-    headers: getHeaders(session),
+    headers: getHeaders(),
   });
   return JSON.parse(<string>position.body);
 }
@@ -451,9 +424,8 @@ export function getPositionByIdOrFail(
 export function createPositionOrFail(
   positionName: string,
   structure: Structure,
-  session: Session,
 ): UserPosition {
-  const res = createPosition(positionName, structure, session);
+  const res = createPosition(positionName, structure);
   if (res.status !== 201) {
     console.error(res);
     fail(
@@ -463,18 +435,15 @@ export function createPositionOrFail(
   return JSON.parse(<string>res.body);
 }
 
-export function searchPositions(content: string, session: Session) {
-  const headers = getHeaders(session);
+export function searchPositions(content: string) {
+  const headers = getHeaders();
   const url = new URL(`${rootUrl}/directory/positions`);
   url.searchParams.append("content", content);
   return http.get(url.toString(), { headers });
 }
 
-export function getPositionsOfStructure(
-  structure: Structure,
-  session: Session,
-): UserPosition[] {
-  const headers = getHeaders(session);
+export function getPositionsOfStructure(structure: Structure): UserPosition[] {
+  const headers = getHeaders();
   const res = http.get(
     `${rootUrl}/directory/positions?structureId=${structure.id}`,
     { headers },
@@ -482,8 +451,8 @@ export function getPositionsOfStructure(
   return JSON.parse(<string>res.body);
 }
 
-export function makeAdml(user: any, structure: Structure, session: Session) {
-  const headers = getHeaders(session);
+export function makeAdml(user: any, structure: Structure) {
+  const headers = getHeaders();
   headers["content-type"] = "application/json";
   const payload = JSON.stringify({
     functionCode: "ADMIN_LOCAL",
@@ -499,12 +468,8 @@ export function makeAdml(user: any, structure: Structure, session: Session) {
   return res;
 }
 
-export function makeAdmlOfStructures(
-  user: any,
-  structureIds: string[],
-  session: Session,
-) {
-  const headers = getHeaders(session);
+export function makeAdmlOfStructures(user: any, structureIds: string[]) {
+  const headers = getHeaders();
   headers["content-type"] = "application/json";
   const payload = JSON.stringify({
     functionCode: "ADMIN_LOCAL",
@@ -537,21 +502,16 @@ export function getAdmlsOrMakThem(
   profile: UserProfileType,
   nbAdmls: number,
   excludedUsers: { id: string }[],
-  session: Session,
 ) {
   const profileGroups: ProfileGroup[] = getProfileGroupsOfStructure(
     structure.id,
-    session,
   );
   const admlGroup: ProfileGroup = profileGroups.filter(
     (pg) => pg.filter === ADML_FILTER,
   )[0];
   let admlUsers: UserInfo[];
   if (admlGroup) {
-    const existingAdmlUsers: UserInfo[] = getUsersOfGroup(
-      admlGroup.id,
-      session,
-    );
+    const existingAdmlUsers: UserInfo[] = getUsersOfGroup(admlGroup.id);
     admlUsers = profile
       ? existingAdmlUsers.filter((u) => u.type === profile)
       : existingAdmlUsers;
@@ -563,7 +523,7 @@ export function getAdmlsOrMakThem(
     admlUsers = admlUsers.filter((u) => excludedIds.indexOf(u.id) < 0);
   }
   if (admlUsers.length < nbAdmls) {
-    const usersOfStructure = getUsersOfSchool(structure, session);
+    const usersOfStructure = getUsersOfSchool(structure);
     for (let i = admlUsers.length; i < nbAdmls; i++) {
       let userToMake: UserInfo;
       if (profile) {
@@ -576,7 +536,7 @@ export function getAdmlsOrMakThem(
       console.log(
         `Turning ${userToMake.login} into an ADML of ${structure.id} - ${structure.name}`,
       );
-      makeAdml(userToMake, structure, session);
+      makeAdml(userToMake, structure);
       admlUsers.push(userToMake);
     }
   }
@@ -586,13 +546,12 @@ export function getAdmlsOrMakThem(
 export function makeEverybodyAdml(
   fromStructure: Structure,
   structureIds: string[],
-  session: Session,
 ) {
-  const usersOfStructure = getUsersOfSchool(fromStructure, session);
+  const usersOfStructure = getUsersOfSchool(fromStructure);
   console.log(`ADMLization of ${usersOfStructure.length} users...`);
   let i = 0;
   for (let userToMake of usersOfStructure) {
-    makeAdmlOfStructures(userToMake, structureIds, session);
+    makeAdmlOfStructures(userToMake, structureIds);
     i++;
     console.log(`${i} users adml-ized`);
   }
@@ -602,24 +561,23 @@ export function makeEverybodyAdml(
 export function attachUserToStructures(
   user: UserInfo,
   structures: Structure | Structure[],
-  session?: Session,
 ) {
+  const oldSession = sessionHolder.session;
   try {
     const userStructures = new Set(user.structures.map((s) => s.id));
-    const _session =
-      session || authenticateWeb(__ENV.ADMC_LOGIN, __ENV.ADMC_PASSWORD)!;
+    authenticateWeb(__ENV.ADMC_LOGIN, __ENV.ADMC_PASSWORD)!;
     const _structures = Array.isArray(structures) ? structures : [structures];
     for (let structure of _structures) {
       if (!userStructures.has(structure.id)) {
         http.put(
           `${rootUrl}/directory/structure/${structure.id}/link/${user.id}`,
           null,
-          { headers: getHeaders(_session) },
+          { headers: getHeaders() },
         );
       }
     }
   } finally {
-    switchSession(session);
+    switchSession(oldSession);
   }
 }
 
@@ -627,7 +585,6 @@ export function importCSVToStructure(
   structure: Structure,
   users: bytes | StructureInitData,
   importParameters: StructureImportParameters,
-  session: Session,
 ) {
   const fd = new FormData();
   fd.append("type", "CSV");
@@ -659,7 +616,7 @@ export function importCSVToStructure(
   if (responsables) {
     fd.append("Relative", http.file(responsables, "responsables.csv"));
   }
-  const headers = getHeaders(session);
+  const headers = getHeaders();
   //@ts-ignore
   headers["Content-Type"] = "multipart/form-data; boundary=" + fd.boundary;
   const params = { headers };
@@ -667,8 +624,8 @@ export function importCSVToStructure(
   return http.post(`${rootUrl}/directory/wizard/import`, fd.body(), params);
 }
 
-export function applyCommRules(structures: Structure[], session: Session) {
-  const headers = getHeaders(session);
+export function applyCommRules(structures: Structure[]) {
+  const headers = getHeaders();
   headers["content-type"] = "application/json";
   console.log("initializing communication rules...");
   let res = http.put(
