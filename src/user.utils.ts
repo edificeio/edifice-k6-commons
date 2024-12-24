@@ -235,3 +235,12 @@ export function createUser(userCreationRequest: UserCreationRequest) {
     headers,
   });
 }
+
+export function mergeUsers(userId1: string, userId2: string, keepRelations:boolean) {
+  const payload = JSON.stringify({
+    keepRelations: keepRelations
+  });
+  const headers = getHeaders();
+  headers["content-type"] = "application/json";
+  return http.post(`${rootUrl}/directory/duplicate/merge/${userId1}/${userId2}`, payload, {headers});
+}
