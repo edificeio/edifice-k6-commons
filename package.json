@@ -1,6 +1,6 @@
 {
   "name": "edifice-k6-commons",
-  "version": "2.0.0",
+  "version": "2.0.0-develop",
   "description": "Common functions for stress tests with K6.",
   "repository": {
     "type": "git",
