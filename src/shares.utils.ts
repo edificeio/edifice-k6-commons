@@ -15,3 +15,11 @@ export function shareFile(
     headers,
   });
 }
+
+export function getShares(fileId: string): Shares {
+  const headers = getHeaders();
+  let res = http.get(`${rootUrl}/workspace/share/json/${fileId}?search=`, {
+    headers,
+  });
+  return JSON.parse(<string>res.body);
+}
