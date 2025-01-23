@@ -3,6 +3,7 @@ import { getHeaders } from "./user.utils";
 import {
   BroadcastGroup,
   ProfileGroup,
+  RoleOfStructure,
   ShareBookMark,
   ShareBookMarkCreationRequest,
   Structure,
@@ -109,8 +110,18 @@ export function getParentRole(structure: Structure) {
   return getProfileGroupOfStructure("relatives", structure);
 }
 
+export function getGuestRole(structure: Structure) {
+  let role = getProfileGroupOfStructure("guests", structure);
+  if (!role) {
+    role = getProfileGroupWithName(
+      `Tous les invités du groupe ${structure.name}.`,
+      structure,
+    );
+  }
+  return role;
+}
+
 /**
- * @deprecated Use getProfileGroupOfStructureByType instead
  * @param profileGroupName Name of the profile group to find
  * @param structure Structure from which we wan to extract the profile group
  * @returns The profile group whose name matches the supplied name
@@ -118,7 +129,7 @@ export function getParentRole(structure: Structure) {
 export function getProfileGroupOfStructure(
   profileGroupName: string,
   structure: Structure,
-) {
+): RoleOfStructure {
   const roles = getRolesOfStructure(structure.id);
   return roles.filter((role) => {
     const lowerName = role.name.toLowerCase();
@@ -129,6 +140,18 @@ export function getProfileGroupOfStructure(
         `${profileGroupName} from group ${structure.name}.`.toLowerCase()
     );
   })[0];
+}
+/**
+ * @param name Name of the group to find
+ * @param structure Structure from which we wan to extract the profile group
+ * @returns The profile group whose name matches the supplied name
+ */
+export function getProfileGroupWithName(
+  name: string,
+  structure: Structure,
+): RoleOfStructure {
+  const roles = getRolesOfStructure(structure.id);
+  return roles.filter((role) => role.name === name)[0];
 }
 
 /**
@@ -158,12 +181,12 @@ export function getProfileGroupsOfStructure(
  * @param structure Structure from which we should filter the groups
  * @returns The found ProfileGroup
  */
-export function getProfileGroupOfStructureByType(
+export function getProfileGroupsOfStructureByType(
   profileType: UserProfileType,
   structure: Structure,
-): ProfileGroup {
+): ProfileGroup[] {
   const groups = getProfileGroupsOfStructure(structure.id);
-  return groups.filter((g) => g.filter === profileType)[0];
+  return groups.filter((g) => g.filter === profileType);
 }
 
 export function getBroadcastGroup(

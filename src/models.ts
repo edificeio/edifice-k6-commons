@@ -180,11 +180,6 @@ export type Identified = {
 
 export type UserProfileType = "Teacher" | "Relative" | "Guest" | "Student";
 
-export type ShareBookMarkCreationRequest = {
-  members: string[];
-  name: string;
-};
-
 export type ShareBookMark = {
   id: string;
   name: string;
@@ -195,6 +190,11 @@ export type ShareBookMark = {
     id: string;
     activationCode: boolean;
   };
+};
+
+export type ShareBookMarkCreationRequest = {
+  members: string[];
+  name: string;
 };
 
 export type DraftMessage = {
