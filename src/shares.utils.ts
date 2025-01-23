@@ -4,6 +4,12 @@ import { Shares } from "./models";
 
 const rootUrl = __ENV.ROOT_URL;
 
+/**
+ * Method applying share rights to a file in workspace
+ * @param fileId the id of the file to apply share rights to
+ * @param shares the share rights
+ * @returns the http response to the endpoint request
+ */
 export function shareFile(
   fileId: string,
   shares: Shares,
@@ -16,6 +22,12 @@ export function shareFile(
   });
 }
 
+/**
+ * Method returning the share rights of a file stored in workspace
+ * @param fileId the id of the file whose share rights must be fetched
+ * @returns the share rights of a file in workspace
+ * Note: the empty 'search' query param is mandatory to retrieve the actual share rights of the file.
+ */
 export function getShares(fileId: string): Shares {
   const headers = getHeaders();
   let res = http.get(`${rootUrl}/workspace/share/json/${fileId}?search=`, {
