@@ -196,3 +196,21 @@ export type ShareBookMark = {
     activationCode: boolean;
   };
 };
+
+export type DraftMessage = {
+  to: string[];
+  cc: string[];
+  cci: string[];
+  subject: string;
+  body: string;
+};
+
+export type SentMessage = {
+  id: string;
+  subject: string;
+  body: string;
+  thread_id: string;
+  inactive: string[];
+  undelivered: string[];
+  sent: number;
+};
