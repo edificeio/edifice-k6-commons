@@ -236,11 +236,38 @@ export function createUser(userCreationRequest: UserCreationRequest) {
   });
 }
 
-export function mergeUsers(userId1: string, userId2: string, keepRelations:boolean) {
+/**
+ * Create a user and returns back her information.
+ * Fails if an error occurs while creating the user or fetching the data.
+ * @param userCreationRequest Creation request
+ * @returns Detailed information on the created user
+ */
+export function createUserAndGetData(
+  userCreationRequest: UserCreationRequest,
+): UserInfo {
+  const payload = <any>userCreationRequest;
+  const headers = getHeaders();
+  headers["content-type"] = "application/x-www-form-urlencoded;charset=UTF-8";
+  const res = http.post(`${rootUrl}/directory/api/user`, payload, {
+    headers,
+  });
+  const id = JSON.parse(<string>res.body).id;
+  return getUserProfileOrFail(id);
+}
+
+export function mergeUsers(
+  userId1: string,
+  userId2: string,
+  keepRelations: boolean,
+) {
   const payload = JSON.stringify({
-    keepRelations: keepRelations
+    keepRelations: keepRelations,
   });
   const headers = getHeaders();
   headers["content-type"] = "application/json";
-  return http.post(`${rootUrl}/directory/duplicate/merge/${userId1}/${userId2}`, payload, {headers});
+  return http.post(
+    `${rootUrl}/directory/duplicate/merge/${userId1}/${userId2}`,
+    payload,
+    { headers },
+  );
 }
