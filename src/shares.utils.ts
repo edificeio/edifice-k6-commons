@@ -26,10 +26,10 @@ export function shareFile(
  * Method returning the share rights of a file stored in workspace
  * @param fileId the id of the file whose share rights must be fetched
  * @returns the share rights of a file in workspace
- * Note: the empty 'search' query param is mandatory to retrieve the actual share rights of the file.
  */
 export function getShares(fileId: string): Shares {
   const headers = getHeaders();
+  // the empty 'search' query param is mandatory to retrieve the actual share rights of the file.
   let res = http.get(`${rootUrl}/workspace/share/json/${fileId}?search=`, {
     headers,
   });
