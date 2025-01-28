@@ -23,7 +23,7 @@ export function addCommunicationBetweenGroups(
   return res;
 }
 /**
- * Sets a group as visible by another group.
+ * Remove communication between groups
  * @param groupIdFrom Id of the group which can see the other group
  * @param groupIdTo Id of the group which can be seen by the other group
  * @returns The HTTP raw response
