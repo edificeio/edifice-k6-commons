@@ -48,3 +48,24 @@ export function removeCommunicationBetweenGroups(
   }
   return res;
 }
+
+/**
+ * Search visibles
+ * @returns The HTTP raw response
+ */
+export function searchVisibles() {
+  const headers = getHeaders();
+  const res = http.get(`${rootUrl}/communication/visible/search`, {
+    headers,
+  });
+  if (res.status !== 200) {
+    console.error(
+      `Error while searching visibles`,
+    );
+    console.error(res);
+    fail(
+      `Error while searching visibles`,
+    );
+  }
+  return res;
+}
