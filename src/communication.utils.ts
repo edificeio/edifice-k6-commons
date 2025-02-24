@@ -53,7 +53,7 @@ export function removeCommunicationBetweenGroups(
  * Search visibles
  * @returns The HTTP raw response
  */
-export function searchVisibles() {
+export function searchVisiblesOrFail() {
   const headers = getHeaders();
   const res = http.get(`${rootUrl}/communication/visible/search`, {
     headers,
@@ -68,4 +68,15 @@ export function searchVisibles() {
     );
   }
   return res;
+}
+
+/**
+ * Search visibles
+ * @returns The HTTP raw response
+ */
+export function searchVisibles() {
+  const headers = getHeaders();
+  return http.get(`${rootUrl}/communication/visible/search`, {
+    headers,
+  });
 }
