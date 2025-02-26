@@ -214,3 +214,21 @@ export type SentMessage = {
   undelivered: string[];
   sent: number;
 };
+
+export type UserLight = {
+  id: string;
+  displayName: string;
+};
+
+// It can be a group or a user or a share bookmark
+export type Visible = {
+  id: string;
+  displayName: string;
+  nbUsers?: number;
+  profile?: string;
+  children?: UserLight[];
+  relatives?: UserLight[];
+  type: string;
+  groupType?: string;
+  usedIn: string[];
+}
