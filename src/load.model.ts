@@ -43,7 +43,7 @@ export type LoadManualGroup = {
     /**
      * Internal of of this user. It will only be used by the program reading this file, not by the ENT
      */
-    id?: number
+    id: number
     birthDate?: string
     ref?: number
     [k: string]: unknown
