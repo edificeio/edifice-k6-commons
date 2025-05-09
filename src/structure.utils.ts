@@ -35,6 +35,13 @@ const rootUrl = __ENV.ROOT_URL;
 const host = new URL(rootUrl).hostname;
 const password = __ENV.DEFAULT_PASSWORD || "password";
 
+export function getAllStructures(): Structure[] {
+  let ecoles = http.get(`${rootUrl}/directory/structure/admin/list`, {
+    headers: getHeaders(),
+  });
+  return JSON.parse(<string>ecoles.body) as Structure[];
+}
+
 export function getSchoolByName(name: string): Structure {
   let ecoles = http.get(`${rootUrl}/directory/structure/admin/list`, {
     headers: getHeaders(),
