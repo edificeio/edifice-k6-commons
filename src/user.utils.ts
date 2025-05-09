@@ -245,12 +245,13 @@ export function createUser(userCreationRequest: UserCreationRequest) {
 export function createUserAndGetData(
   userCreationRequest: UserCreationRequest,
 ): UserInfo {
-  const payload = <any>userCreationRequest;
-  const headers = getHeaders();
-  headers["content-type"] = "application/x-www-form-urlencoded;charset=UTF-8";
-  const res = http.post(`${rootUrl}/directory/api/user`, payload, {
-    headers,
-  });
+  const res = createUser(userCreationRequest);
+  if (res.status !== 201 && res.status !== 200) {
+    console.error(res);
+    fail(
+      `Error while creating user ${userCreationRequest.firstName} ${userCreationRequest.lastName}`,
+    );
+  }
   const id = JSON.parse(<string>res.body).id;
   return getUserProfileOrFail(id);
 }
