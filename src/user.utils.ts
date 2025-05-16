@@ -10,12 +10,11 @@ import {
   UserProfileType,
 } from "./models";
 import sessionHolder from "./session.utils";
+import { BASE_URL, CLIENT_ID, CLIENT_SCOPE, CLIENT_SECRET } from "./env.utils";
 
 const THIRTY_MINUTES_IN_SECONDS = 30 * 60;
 
-const rootUrl = __ENV.ROOT_URL;
-
-export const getHeaders = function (): {
+export const getHeaders = function (contentType?: string): {
   [name: string]: string;
 } {
   let headers: any = {};
@@ -35,11 +34,14 @@ export const getHeaders = function (): {
     headers.requestTimeout = __ENV.REQUEST_TIMEOUT;
     headers.timeout = __ENV.REQUEST_TIMEOUT;
   }
+  if(contentType) {
+    headers["Content-Type"] = contentType;
+  }
   return headers;
 };
 
 export const searchUser = function (q: string): string {
-  const response = http.get(`${rootUrl}/conversation/visible?search=${q}`, {
+  const response = http.get(`${BASE_URL}/conversation/visible?search=${q}`, {
     headers: getHeaders(),
   });
   check(response, {
@@ -50,7 +52,7 @@ export const searchUser = function (q: string): string {
 };
 
 export const getConnectedUserId = function () {
-  const response = http.get(`${rootUrl}/auth/oauth2/userinfo`, {
+  const response = http.get(`${BASE_URL}/auth/oauth2/userinfo`, {
     headers: getHeaders(),
   });
   check(response, {
@@ -62,7 +64,7 @@ export const getConnectedUserId = function () {
 
 export const authenticateWeb = function (login: string, pwd?: string) {
   const jar = http.cookieJar();
-  jar.clear(rootUrl);
+  jar.clear(BASE_URL);
   let credentials = {
     email: login,
     password: pwd || __ENV.DEFAULT_PASSWORD || "password",
@@ -70,7 +72,7 @@ export const authenticateWeb = function (login: string, pwd?: string) {
     detail: "",
   };
 
-  const response = http.post(`${rootUrl}/auth/login`, credentials, {
+  const response = http.post(`${BASE_URL}/auth/login`, credentials, {
     redirects: 0,
   });
   if (response.status !== 302) {
@@ -84,7 +86,7 @@ export const authenticateWeb = function (login: string, pwd?: string) {
   }
   let session: Session | null;
   if (response.cookies["oneSessionId"]) {
-    jar.set(rootUrl, "oneSessionId", response.cookies["oneSessionId"][0].value);
+    jar.set(BASE_URL, "oneSessionId", response.cookies["oneSessionId"][0].value);
     const cookies: Cookie[] = Object.keys(response.cookies).map(
       (cookieName) => {
         return {
@@ -108,10 +110,10 @@ export const authenticateWeb = function (login: string, pwd?: string) {
 };
 
 export const logout = function () {
-  const res = http.get(`${rootUrl}/auth/logout?callback=/`, {
+  const res = http.get(`${BASE_URL}/auth/logout?callback=/`, {
     headers: getHeaders(),
   });
-  http.cookieJar().clear(rootUrl);
+  http.cookieJar().clear(BASE_URL);
   sessionHolder.session = null;
   return res;
 };
@@ -121,11 +123,11 @@ export const switchSession = function (
 ): Session | null {
   const jar = http.cookieJar();
   if (session) {
-    jar.set(rootUrl, "oneSessionId", session.token);
-    jar.set(rootUrl, "XSRF-TOKEN", session.getCookie("XSRF-TOKEN") || "");
+    jar.set(BASE_URL, "oneSessionId", session.token);
+    jar.set(BASE_URL, "XSRF-TOKEN", session.getCookie("XSRF-TOKEN") || "");
   } else {
-    jar.delete(rootUrl, "oneSessionId");
-    jar.delete(rootUrl, "XSRF-TOKEN");
+    jar.delete(BASE_URL, "oneSessionId");
+    jar.delete(BASE_URL, "XSRF-TOKEN");
   }
   sessionHolder.session = session || null;
   return session;
@@ -134,33 +136,37 @@ export const switchSession = function (
 export const authenticateOAuth2 = function (
   login: string,
   pwd: string,
-  clientId: string,
-  clientSecret: string,
-) {
+  clientId?: string,
+  clientSecret?: string,
+  scope?: string
+): boolean {
   let credentials = {
     grant_type: "password",
     username: login,
     password: pwd,
-    client_id: clientId,
-    client_secret: clientSecret,
-    scope:
-      "timeline userbook blog lvs actualites pronote schoolbook support viescolaire zimbra conversation directory homeworks userinfo workspace portal cas sso presences incidents competences diary edt infra auth",
+    client_id: clientId || CLIENT_ID,
+    client_secret: clientSecret || CLIENT_SECRET,
+    scope: scope || CLIENT_SCOPE
   };
 
-  let response = http.post(`${rootUrl}/auth/oauth2/token`, credentials, {
+  let response = http.post(`${BASE_URL}/auth/oauth2/token`, credentials, {
     redirects: 0,
   });
-  check(response, {
+  let ok = check(response, {
     "should get an OK response for authentication": (r) => r.status == 200,
     "should have set an access token": (r) => !!r.json("access_token"),
   });
-  const accessToken = <string>response.json("access_token");
-  const session = new Session(
-    accessToken,
-    SessionMode.OAUTH2,
-    <number>response.json("expires_in"),
-  );
-  sessionHolder.session = session;
+  if(ok) {
+    const accessToken = <string>response.json("access_token");
+    const session = new Session(
+      accessToken,
+      SessionMode.OAUTH2,
+      <number>response.json("expires_in"),
+    );
+    sessionHolder.session = session;
+    http.cookieJar().clear(BASE_URL);
+  }
+  return ok;
 };
 
 /**
@@ -217,7 +223,7 @@ export function checkStatus(
 }
 
 export function getUserProfileOrFail(id: string): UserInfo {
-  let res = http.get(`${rootUrl}/directory/user/${id}?manual-groups=true`, {
+  let res = http.get(`${BASE_URL}/directory/user/${id}?manual-groups=true`, {
     headers: getHeaders(),
   });
   if (res.status !== 200) {
@@ -231,7 +237,7 @@ export function createUser(userCreationRequest: UserCreationRequest) {
   const payload = <any>userCreationRequest;
   const headers = getHeaders();
   headers["content-type"] = "application/x-www-form-urlencoded;charset=UTF-8";
-  return http.post(`${rootUrl}/directory/api/user`, payload, {
+  return http.post(`${BASE_URL}/directory/api/user`, payload, {
     headers,
   });
 }
@@ -267,7 +273,7 @@ export function mergeUsers(
   const headers = getHeaders();
   headers["content-type"] = "application/json";
   return http.post(
-    `${rootUrl}/directory/duplicate/merge/${userId1}/${userId2}`,
+    `${BASE_URL}/directory/duplicate/merge/${userId1}/${userId2}`,
     payload,
     { headers },
   );
