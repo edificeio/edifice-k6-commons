@@ -10,10 +10,7 @@ const rootUrl = __ENV.ROOT_URL;
  * @param shares the share rights
  * @returns the http response to the endpoint request
  */
-export function shareFile(
-  id: string,
-  shares: Shares,
-): RefinedResponse<any> {
+export function shareFile(id: string, shares: Shares): RefinedResponse<any> {
   const headers = getHeaders();
   headers["content-type"] = "application/json";
   const payload = JSON.stringify(shares);

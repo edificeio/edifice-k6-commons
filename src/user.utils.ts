@@ -34,7 +34,7 @@ export const getHeaders = function (contentType?: string): {
     headers.requestTimeout = __ENV.REQUEST_TIMEOUT;
     headers.timeout = __ENV.REQUEST_TIMEOUT;
   }
-  if(contentType) {
+  if (contentType) {
     headers["Content-Type"] = contentType;
   }
   return headers;
@@ -86,7 +86,11 @@ export const authenticateWeb = function (login: string, pwd?: string) {
   }
   let session: Session | null;
   if (response.cookies["oneSessionId"]) {
-    jar.set(BASE_URL, "oneSessionId", response.cookies["oneSessionId"][0].value);
+    jar.set(
+      BASE_URL,
+      "oneSessionId",
+      response.cookies["oneSessionId"][0].value,
+    );
     const cookies: Cookie[] = Object.keys(response.cookies).map(
       (cookieName) => {
         return {
@@ -138,7 +142,7 @@ export const authenticateOAuth2 = function (
   pwd: string,
   clientId?: string,
   clientSecret?: string,
-  scope?: string
+  scope?: string,
 ): boolean {
   let credentials = {
     grant_type: "password",
@@ -146,7 +150,7 @@ export const authenticateOAuth2 = function (
     password: pwd,
     client_id: clientId || CLIENT_ID,
     client_secret: clientSecret || CLIENT_SECRET,
-    scope: scope || CLIENT_SCOPE
+    scope: scope || CLIENT_SCOPE,
   };
 
   let response = http.post(`${BASE_URL}/auth/oauth2/token`, credentials, {
@@ -156,7 +160,7 @@ export const authenticateOAuth2 = function (
     "should get an OK response for authentication": (r) => r.status == 200,
     "should have set an access token": (r) => !!r.json("access_token"),
   });
-  if(ok) {
+  if (ok) {
     const accessToken = <string>response.json("access_token");
     const session = new Session(
       accessToken,

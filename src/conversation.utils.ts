@@ -21,7 +21,7 @@ export function createDraftMessage(
 /**
  * Send a message
  * @param messageId the id of the message to be sent
- * @param message the message data (overwright the existing draft if existing) 
+ * @param message the message data (overwright the existing draft if existing)
  * @returns the raw http response of the message sent
  */
 export function sendMessage(

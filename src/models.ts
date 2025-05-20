@@ -231,4 +231,4 @@ export type Visible = {
   type: string;
   groupType?: string;
   usedIn: string[];
-}
+};

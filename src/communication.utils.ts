@@ -59,13 +59,9 @@ export function searchVisiblesOrFail() {
     headers,
   });
   if (res.status !== 200) {
-    console.error(
-      `Error while searching visibles`,
-    );
+    console.error(`Error while searching visibles`);
     console.error(res);
-    fail(
-      `Error while searching visibles`,
-    );
+    fail(`Error while searching visibles`);
   }
   return res;
 }
