@@ -1,5 +1,8 @@
 # edifice-k6-commons
 
+- Licence : AGPL v3
+- Développeur(s) : Edifice
+
 ## Généralités
 
 Cette librairie fournit les fonctionnalités de base pour intéragir avec l'ENT via K6 (authentification, appels HTTP et WS, utilitaires de vérification des résultats, etc.).
