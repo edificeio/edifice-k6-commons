@@ -10,6 +10,7 @@ import {
   UserInfo,
   UserProfileType,
   getRolesOfStructure,
+  GroupCommunicationRelation,
 } from ".";
 import { check, fail } from "k6";
 
@@ -231,4 +232,41 @@ export function getUsersOfGroup(groupId: string): UserInfo[] {
     { headers },
   );
   return JSON.parse(<string>res.body);
+}
+
+/**
+ *
+ * @param groupId Id of the group whose group related we want
+ * @param relation type of relation to the group
+ * @returns List of group profile that have a relation with the specified group
+ */
+export function getProfileGroupsRelatedToGroup(
+  groupId: string,
+  relation: GroupCommunicationRelation,
+): ProfileGroup[] {
+  const headers = getHeaders();
+  headers["content-type"] = "application/json";
+  let res = http.get(`${rootUrl}/communication/group/${groupId}/${relation}`, {
+    headers,
+  });
+  return JSON.parse(<string>res.body);
+}
+
+/**
+ * Reset all communication rules on a structure and apply default rules
+ * @param school structure to reset
+ */
+export function resetRulesAndCheck(school: Structure): void {
+  const headers = getHeaders();
+  headers["content-type"] = "application/json";
+  let res = http.post(
+    `${rootUrl}/communication/rules/${school.id}/reset`,
+    null,
+    {
+      headers,
+    },
+  );
+  check(res, {
+    "reset communication rules should be ok": (r) => r.status == 200,
+  });
 }
