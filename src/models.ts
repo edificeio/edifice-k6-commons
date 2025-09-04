@@ -167,6 +167,8 @@ export type StructureImportParameters = {
   transition?: boolean;
 };
 
+export type GroupCommunicationRelation = "incoming" | "outgoing";
+
 export type Group = {
   id: string;
   name: string;
