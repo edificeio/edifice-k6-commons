@@ -62,8 +62,9 @@ export function createAndSetRole(applicationName: string): Role {
 export function getRolesOfStructure(structureId: string): RoleOfStructure[] {
   const headers = getHeaders();
   headers["Accept-Language"] = "en";
+  headers["X-Force-Language"] = "true";
   let res = http.get(
-    `${rootUrl}/appregistry/groups/roles?structureId=${structureId}&bypassPreference=true`,
+    `${rootUrl}/appregistry/groups/roles?structureId=${structureId}`,
     { headers },
   );
   check(res, {
