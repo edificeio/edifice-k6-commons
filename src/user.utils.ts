@@ -282,3 +282,29 @@ export function mergeUsers(
     { headers },
   );
 }
+
+export function addAdminFunction(
+  userId: string,
+  structures: string[],
+) {
+  const payload = JSON.stringify({
+    functionCode: "ADMIN_LOCAL",
+    inherit: "s",
+    scope: [...structures],
+  });
+  const headers = getHeaders();
+  headers["content-type"] = "application/json";
+  const res = http.post(
+    `${BASE_URL}/directory/user/function/${userId}`,
+    payload,
+    { headers },
+  );
+
+  if (res.status !== 201 && res.status !== 200) {
+    console.error(res);
+    fail(
+      `Error while adding admin function on user ${userId}`,
+    );
+  }
+  return res;
+}
