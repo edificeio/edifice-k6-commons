@@ -180,7 +180,7 @@ export type Identified = {
   id: string;
 };
 
-export type UserProfileType = "Teacher" | "Relative" | "Guest" | "Student";
+export type UserProfileType = "Teacher" | "Relative" | "Guest" | "Student" | "Personnel";
 
 export type ShareBookMarkCreationRequest = {
   members: string[];
