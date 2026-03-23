@@ -167,7 +167,7 @@ export type StructureImportParameters = {
   transition?: boolean;
 };
 
-export type GroupCommunicationRelation = "incoming" | "outgoing";
+export type GroupCommunicationRelation = "incoming" | "outgoing" | "both" | "none";
 
 export type Group = {
   id: string;
@@ -234,6 +234,17 @@ export type Visible = {
   groupType?: string;
   usedIn: string[];
 };
+
+export type HomePagePreference = {
+  betaEnabled: boolean;
+}
+
+export type UserPreferences = {
+  preferences: PreferenceType[];
+  homePagePreference: HomePagePreference;
+}
+
+export type PreferenceType = "HOME_PAGE";
 
 export type LaunchExportResponse = {
   exportId: string;

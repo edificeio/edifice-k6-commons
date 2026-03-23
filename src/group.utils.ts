@@ -11,6 +11,7 @@ import {
   UserProfileType,
   getRolesOfStructure,
   GroupCommunicationRelation,
+  Group,
 } from ".";
 import { check, fail } from "k6";
 
@@ -54,6 +55,49 @@ export function createBroadcastGroup(
     broadcastGroup = getBroadcastGroup(broadcastListName, school);
   }
   return broadcastGroup;
+}
+
+export function createGroup(
+  groupName: string,
+  school: Structure,
+): Group {
+  let group = getGroup(groupName, school);
+  if (group) {
+    console.log("Group already existed");
+  } else {
+    console.log("Creating group");
+    const headers = getHeaders();
+    headers["content-type"] = "application/json";
+    let payload = JSON.stringify({
+      name: groupName,
+      structureId: school.id
+    });
+    let res = http.post(`${rootUrl}/directory/group`, payload, { headers });
+    check(res, {
+      "create group": (r) => r.status === 201,
+    });  
+    group = getGroup(groupName, school);
+  }
+  return group;
+}
+
+export function modifyCommunicationRelationOrFail(group: Group, communicationRelation: GroupCommunicationRelation) {
+  const headers = getHeaders();
+  switch(communicationRelation) {
+    case "both" : 
+      let res = http.post(`${rootUrl}/communication/group/${group.id}/users`, null, { headers });
+      check(res, {
+        "Change group communication relation to BOTH": (r) => r.status === 200,
+      });  
+      break;
+    case "none" :
+      let resDel = http.del(`${rootUrl}/communication/group/${group.id}/users`, null, { headers });
+      check(resDel, {
+        "Change group communication relation to NONE": (r) => r.status === 200,
+      });  
+      break;
+    break;
+  }
 }
 
 export function createShareBookMarkOrFail(
@@ -216,6 +260,34 @@ export function getBroadcastGroup(
   return JSON.parse(<string>res.body).filter(
     (e: any) => e.subType === "BroadcastGroup" && e.name === broadcastListName,
   )[0];
+}
+
+export function getGroup(
+  groupName: string,
+  school: Structure,
+): Group {
+  const headers = getHeaders();
+  headers["content-type"] = "application/json";
+  let res = http.get(
+    `${rootUrl}/directory/group/admin/list?translate=false&structureId=${school.id}`,
+    { headers },
+  );
+  return JSON.parse(<string>res.body).filter(
+    (e: any) => e.name === groupName,
+  )[0];
+}
+
+/**
+  * @param group Group to delete
+ */
+
+export function deleteGroupOrFail(group: Group) {
+  let res = http.del(`${rootUrl}/directory/group/${group.id}`, null,   
+    { headers: getHeaders() });
+  if (res.status !== 204) {
+    console.error(res);
+    fail(`Cannot delete group`);
+  }
 }
 
 /**
