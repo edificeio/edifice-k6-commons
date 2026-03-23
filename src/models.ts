@@ -244,6 +244,17 @@ export type Visible = {
   usedIn: string[];
 };
 
+export type HomePagePreference = {
+  betaEnabled: boolean;
+}
+
+export type UserPreferences = {
+  preferences: PreferenceType[];
+  homePagePreference: HomePagePreference;
+}
+
+export type PreferenceType = "HOME_PAGE";
+
 export type LaunchExportResponse = {
   exportId: string;
   message: string;
