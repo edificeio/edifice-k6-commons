@@ -57,10 +57,7 @@ export function createBroadcastGroup(
   return broadcastGroup;
 }
 
-export function createGroup(
-  groupName: string,
-  school: Structure,
-): Group {
+export function createGroup(groupName: string, school: Structure): Group {
   let group = getGroup(groupName, school);
   if (group) {
     console.log("Group already existed");
@@ -70,33 +67,44 @@ export function createGroup(
     headers["content-type"] = "application/json";
     let payload = JSON.stringify({
       name: groupName,
-      structureId: school.id
+      structureId: school.id,
     });
     let res = http.post(`${rootUrl}/directory/group`, payload, { headers });
     check(res, {
       "create group": (r) => r.status === 201,
-    });  
+    });
     group = getGroup(groupName, school);
   }
   return group;
 }
 
-export function modifyCommunicationRelationOrFail(group: Group, communicationRelation: GroupCommunicationRelation) {
+export function modifyCommunicationRelationOrFail(
+  group: Group,
+  communicationRelation: GroupCommunicationRelation,
+) {
   const headers = getHeaders();
-  switch(communicationRelation) {
-    case "both" : 
-      let res = http.post(`${rootUrl}/communication/group/${group.id}/users`, null, { headers });
+  switch (communicationRelation) {
+    case "both":
+      let res = http.post(
+        `${rootUrl}/communication/group/${group.id}/users`,
+        null,
+        { headers },
+      );
       check(res, {
         "Change group communication relation to BOTH": (r) => r.status === 200,
-      });  
+      });
       break;
-    case "none" :
-      let resDel = http.del(`${rootUrl}/communication/group/${group.id}/users`, null, { headers });
+    case "none":
+      let resDel = http.del(
+        `${rootUrl}/communication/group/${group.id}/users`,
+        null,
+        { headers },
+      );
       check(resDel, {
         "Change group communication relation to NONE": (r) => r.status === 200,
-      });  
+      });
       break;
-    break;
+      break;
   }
 }
 
@@ -262,10 +270,7 @@ export function getBroadcastGroup(
   )[0];
 }
 
-export function getGroup(
-  groupName: string,
-  school: Structure,
-): Group {
+export function getGroup(groupName: string, school: Structure): Group {
   const headers = getHeaders();
   headers["content-type"] = "application/json";
   let res = http.get(
@@ -278,12 +283,13 @@ export function getGroup(
 }
 
 /**
-  * @param group Group to delete
+ * @param group Group to delete
  */
 
 export function deleteGroupOrFail(group: Group) {
-  let res = http.del(`${rootUrl}/directory/group/${group.id}`, null,   
-    { headers: getHeaders() });
+  let res = http.del(`${rootUrl}/directory/group/${group.id}`, null, {
+    headers: getHeaders(),
+  });
   if (res.status !== 204) {
     console.error(res);
     fail(`Cannot delete group`);
