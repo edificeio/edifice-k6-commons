@@ -167,7 +167,11 @@ export type StructureImportParameters = {
   transition?: boolean;
 };
 
-export type GroupCommunicationRelation = "incoming" | "outgoing" | "both" | "none";
+export type GroupCommunicationRelation =
+  | "incoming"
+  | "outgoing"
+  | "both"
+  | "none";
 
 export type Group = {
   id: string;
@@ -180,7 +184,12 @@ export type Identified = {
   id: string;
 };
 
-export type UserProfileType = "Teacher" | "Relative" | "Guest" | "Student" | "Personnel";
+export type UserProfileType =
+  | "Teacher"
+  | "Relative"
+  | "Guest"
+  | "Student"
+  | "Personnel";
 
 export type ShareBookMarkCreationRequest = {
   members: string[];
@@ -237,11 +246,9 @@ export type Visible = {
 
 export type HomePagePreference = {
   betaEnabled: boolean;
-}
+};
 
 export type UserPreferences = {
-  preferences: PreferenceType[];
-  homePagePreference: HomePagePreference;
-}
+  homePage?: HomePagePreference;
+};
 
-export type PreferenceType = "HOME_PAGE";
