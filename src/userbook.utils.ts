@@ -1,6 +1,6 @@
-import http, { RefinedResponse } from "k6/http";
+import http, {RefinedResponse} from "k6/http";
 import { getHeaders } from "./user.utils";
-import { UserbookSearchCriteria, UserPreferences } from "./models";
+import {UserbookSearchCriteria, UserPreferences} from "./models";
 const rootUrl = __ENV.ROOT_URL;
 
 export function getSearchCriteria(): UserbookSearchCriteria {
