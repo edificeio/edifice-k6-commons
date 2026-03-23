@@ -249,8 +249,11 @@ export type HomePagePreference = {
 };
 
 export type UserPreferences = {
-  homePage?: HomePagePreference;
-};
+    preferences: PreferenceType[];
+    homePagePreference: HomePagePreference;
+}
+
+export type PreferenceType = "HOME_PAGE";
 
 export type LaunchExportResponse = {
   exportId: string;

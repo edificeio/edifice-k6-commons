@@ -104,7 +104,6 @@ export function modifyCommunicationRelationOrFail(
         "Change group communication relation to NONE": (r) => r.status === 200,
       });
       break;
-      break;
   }
 }
 
