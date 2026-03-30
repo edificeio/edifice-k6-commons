@@ -21,7 +21,7 @@ export const getHeaders = function (contentType?: string): {
   const session = sessionHolder.session;
   if (session) {
     if (session.mode === SessionMode.COOKIE) {
-      headers = { "x-xsrf-token": session.getCookie("XSRF-TOKEN") || "" };
+      headers = { "X-XSRF-TOKEN": session.getCookie("XSRF-TOKEN") || "" };
     } else if (session.mode === SessionMode.OAUTH2) {
       headers = { Authorization: `Bearer ${session.token}` };
     } else {
@@ -283,10 +283,7 @@ export function mergeUsers(
   );
 }
 
-export function addAdminFunction(
-  userId: string,
-  structures: string[],
-) {
+export function addAdminFunction(userId: string, structures: string[]) {
   const payload = JSON.stringify({
     functionCode: "ADMIN_LOCAL",
     inherit: "s",
@@ -302,9 +299,7 @@ export function addAdminFunction(
 
   if (res.status !== 201 && res.status !== 200) {
     console.error(res);
-    fail(
-      `Error while adding admin function on user ${userId}`,
-    );
+    fail(`Error while adding admin function on user ${userId}`);
   }
   return res;
 }
