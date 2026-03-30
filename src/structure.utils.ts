@@ -188,7 +188,9 @@ export function initStructure(
 ) {
   authenticateWeb(__ENV.ADMC_LOGIN, __ENV.ADMC_PASSWORD)!;
   const structure: Structure = createDefaultStructure(structureName, flavour);
-  activateUsers(structure);
+  if (__ENV.SKIP_USERS_ACTIVATION !== "true") {
+    activateUsers(structure);
+  }
   return structure;
 }
 /**
@@ -281,11 +283,10 @@ export function attachStructureAsChild(
     );
     added = false;
   } else {
-    const headers = getHeaders();
-    headers["content-type"] = "application/json";
     let res = http.put(
       `${rootUrl}/directory/structure/${childStructure.id}/parent/${parentStructure.id}`,
       "{}",
+      { headers: getHeaders("application/json") },
     );
     if (res.status !== 200) {
       if (nbRetry > 0) {
