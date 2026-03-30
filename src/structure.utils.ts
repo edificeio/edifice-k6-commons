@@ -77,21 +77,26 @@ export function activateUsers(structure: Structure) {
 
 export function activateUser(user: any) {
   if (user.code) {
-    const fd: any = {};
-    fd["login"] = user.login;
-    fd["activationCode"] = user.code;
-    fd["password"] = password;
-    fd["confirmPassword"] = password;
-    fd["acceptCGU"] = "true";
-    const res = http.post(`${rootUrl}/auth/activation`, fd, {
-      redirects: 0,
-      headers: { Host: host },
-    });
-    if (res.status !== 302) {
-      console.error(res);
-      fail(
-        `Could not activate user ${user.login} : ${res.status} - ${res.body}`,
-      );
+    const oldSession = sessionHolder.session;
+    try {
+      const fd: any = {};
+      fd["login"] = user.login;
+      fd["activationCode"] = user.code;
+      fd["password"] = password;
+      fd["confirmPassword"] = password;
+      fd["acceptCGU"] = "true";
+      const res = http.post(`${rootUrl}/auth/activation`, fd, {
+        redirects: 0,
+        headers: { Host: host },
+      });
+      if (res.status !== 302) {
+        console.error(res);
+        fail(
+          `Could not activate user ${user.login} : ${res.status} - ${res.body}`,
+        );
+      }
+    } finally {
+      switchSession(oldSession);
     }
   }
 }
@@ -142,13 +147,12 @@ export function createEmptyStructure(
   if (structure) {
     console.log(`Structure ${structureName} already exists`);
   } else {
-    const headers = getHeaders();
-    headers["content-type"] = "application/json";
+    const headers = getHeaders("application/json");
     const payload = JSON.stringify({
       hasApp,
       name: structureName,
     });
-    let res = http.post(`${rootUrl}/directory/school`, payload, headers);
+    let res = http.post(`${rootUrl}/directory/school`, payload, {headers});
     if (res.status !== 201) {
       console.error(res.body);
       fail(`Could not create structure ${structureName}`);

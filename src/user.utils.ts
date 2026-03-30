@@ -21,7 +21,7 @@ export const getHeaders = function (contentType?: string): {
   const session = sessionHolder.session;
   if (session) {
     if (session.mode === SessionMode.COOKIE) {
-      headers = { "x-xsrf-token": session.getCookie("XSRF-TOKEN") || "" };
+      headers = { "X-XSRF-TOKEN": session.getCookie("XSRF-TOKEN") || "" };
     } else if (session.mode === SessionMode.OAUTH2) {
       headers = { Authorization: `Bearer ${session.token}` };
     } else {
