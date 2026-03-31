@@ -244,6 +244,11 @@ export type Visible = {
   usedIn: string[];
 };
 
+
+export type LaunchExportResponse = {
+  exportId: string;
+  message: string;
+};
 export type HomePagePreference = {
   betaEnabled: boolean;
 };
