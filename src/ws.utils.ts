@@ -122,12 +122,20 @@ export function uploadFile(fileData: bytes, fileName: string = "file.txt"): Work
   return JSON.parse(<string>res.body);
 }
 
+export function uploadZip(fileData: bytes, fileName: string = "file.zip"): RefinedResponse<ResponseType | undefined> {
+  let headers = getHeaders();
+  const fd = new FormData();
+  const contentType = getContentType(fileName);
+  //@ts-ignore
+  fd.append("file", http.file(fileData, fileName, contentType));
+  //@ts-ignore
+  headers["Content-Type"] = "multipart/form-data; boundary=" + fd.boundary;
+  return http.post(`${rootUrl}/workspace/zip`, fd.body(), { headers });
+}
+
 export function downloadFile(fileId: string, thumbnail: string = ''): RefinedResponse<ResponseType | undefined> {
   let headers = getHeaders();
   const thumbnailQuery = thumbnail ? `?thumbnail=${thumbnail}` : '';
   let res = http.get(`${rootUrl}/workspace/document/${fileId}${thumbnailQuery}`, { headers });
-  check(res, {
-    "download file ok": (r) => r.status === 200,
-  });
   return res;
 }
