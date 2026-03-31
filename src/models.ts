@@ -234,3 +234,9 @@ export type Visible = {
   groupType?: string;
   usedIn: string[];
 };
+
+
+export type LaunchExportResponse = {
+  exportId: string;
+  message: string;
+};
