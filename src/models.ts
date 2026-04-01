@@ -251,4 +251,3 @@ export type HomePagePreference = {
 export type UserPreferences = {
   homePage?: HomePagePreference;
 };
-

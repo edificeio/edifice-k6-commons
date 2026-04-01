@@ -1,4 +1,4 @@
-import http from "k6/http";
+import http, { RefinedResponse } from "k6/http";
 import { getHeaders } from "./user.utils";
 import {
   BroadcastGroup,
@@ -57,7 +57,12 @@ export function createBroadcastGroup(
   return broadcastGroup;
 }
 
-export function createGroup(groupName: string, school: Structure): Group {
+/**
+ * Create a manual group on a given structure and return the created group
+ * @param groupName
+ * @param school
+ */
+export function createGroupOrFail(groupName: string, school: Structure): Group {
   let group = getGroup(groupName, school);
   if (group) {
     console.log("Group already existed");
@@ -78,34 +83,43 @@ export function createGroup(groupName: string, school: Structure): Group {
   return group;
 }
 
+/**
+ * Add an array of user to a group
+ * @param userIds ids of user to add
+ * @param group target group
+ */
+export function addUsersToGroup(
+  userIds: string[],
+  group: Group,
+): RefinedResponse<any> {
+  const headers = getHeaders();
+  headers["content-type"] = "application/json";
+  let payload = JSON.stringify({
+    userIds: userIds,
+  });
+  return http.put(`${rootUrl}/directory/group/${group.id}/users/add`, payload, {
+    headers,
+  });
+}
+
+/**
+ * Modify a communication group with the given communication direction. Doesn't delete existing communication
+ * @param group
+ * @param communicationRelation
+ */
 export function modifyCommunicationRelationOrFail(
   group: Group,
   communicationRelation: GroupCommunicationRelation,
 ) {
   const headers = getHeaders();
-  switch (communicationRelation) {
-    case "both":
-      let res = http.post(
-        `${rootUrl}/communication/group/${group.id}/users`,
-        null,
-        { headers },
-      );
-      check(res, {
-        "Change group communication relation to BOTH": (r) => r.status === 200,
-      });
-      break;
-    case "none":
-      let resDel = http.del(
-        `${rootUrl}/communication/group/${group.id}/users`,
-        null,
-        { headers },
-      );
-      check(resDel, {
-        "Change group communication relation to NONE": (r) => r.status === 200,
-      });
-      break;
-      break;
-  }
+  let resDel = http.post(
+    `${rootUrl}/communication/group/${group.id}?direction=${communicationRelation}`,
+    null,
+    { headers },
+  );
+  check(resDel, {
+    "Change group communication relation": (r) => r.status === 200,
+  });
 }
 
 export function createShareBookMarkOrFail(
