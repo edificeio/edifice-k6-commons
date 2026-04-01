@@ -1,6 +1,7 @@
 import http from "k6/http";
 import { fail } from "k6";
 import { getHeaders } from "./user.utils";
+import { GroupCommunicationRelation } from "./models";
 
 const rootUrl = __ENV.ROOT_URL;
 
@@ -45,6 +46,32 @@ export function removeCommunicationBetweenGroups(
     fail(
       `could not remove communication between ${groupIdFrom} -> ${groupIdTo}`,
     );
+  }
+  return res;
+}
+
+/**
+ * Set direct communication between users : INCOMING A <= B
+ *
+ * @param userIdFrom Id of the user from
+ * @param userIdTo Id of the group which can be seen by the other group
+ * @param communicationRelation
+ * @returns The HTTP raw response
+ */
+export function setDirectCommunicationOrFail(
+  userIdFrom: string,
+  userIdTo: string,
+  communicationRelation: GroupCommunicationRelation,
+) {
+  const res = http.put(
+    `${rootUrl}/communication/api/admin/users/${userIdFrom}/communiqueDirect/${userIdTo}?direction=${communicationRelation}`,
+    null,
+    { headers: getHeaders() },
+  );
+  if (res.status >= 300) {
+    console.error(`Error while setting direct communication`);
+    console.error(res);
+    fail(`Error while setting direct communication`);
   }
   return res;
 }
