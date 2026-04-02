@@ -152,7 +152,7 @@ export function createEmptyStructure(
       hasApp,
       name: structureName,
     });
-    let res = http.post(`${rootUrl}/directory/school`, payload, {headers});
+    let res = http.post(`${rootUrl}/directory/school`, payload, { headers });
     if (res.status !== 201) {
       console.error(res.body);
       fail(`Could not create structure ${structureName}`);
