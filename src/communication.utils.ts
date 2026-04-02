@@ -1,7 +1,7 @@
 import http from "k6/http";
-import { fail } from "k6";
+import {check, fail} from "k6";
 import { getHeaders } from "./user.utils";
-import { GroupCommunicationRelation } from "./models";
+import {Group, GroupCommunicationRelation} from "./models";
 
 const rootUrl = __ENV.ROOT_URL;
 
@@ -91,6 +91,83 @@ export function searchVisiblesOrFail() {
     fail(`Error while searching visibles`);
   }
   return res;
+}
+
+
+/**
+ * Delete communication on group with the given communication direction.
+ * @group
+ * @param communicationRelation
+ */
+export function removeCommunicationOrFail(
+    group: Group,
+    communicationRelation: GroupCommunicationRelation,
+) {
+  const headers = getHeaders();
+  let resDel = http.del(
+      `${rootUrl}/communication/group/${group.id}?direction=${communicationRelation}`,
+      null,
+      { headers },
+  );
+  check(resDel, {
+    "Change group communication relation": (r) => r.status === 200,
+  });
+}
+
+/**
+ * Modify a communication group to both and update communication
+ * @param group
+ */
+export function safelyModifyCommunicationToBothOrFail(
+    group: Group
+) {
+  const headers = getHeaders();
+  let resDel = http.post(
+      `${rootUrl}/communication/group/${group.id}/users`,
+      null,
+      { headers },
+  );
+  check(resDel, {
+    "Safely modify group communication to BOTH": (r) => r.status === 200,
+  });
+}
+
+/**
+ * Modify a communication group remove both and calculate new state
+ * @param group
+ */
+export function safelyRemoveCommunicationFromBothOrFail(
+    group: Group
+) {
+  const headers = getHeaders();
+  let resDel = http.del(
+      `${rootUrl}/communication/group/${group.id}/users`,
+      null,
+      { headers },
+  );
+  check(resDel, {
+    "Safely remove both of group communication": (r) => r.status === 200,
+  });
+}
+
+/**
+ * Modify a communication group with the given communication direction. Doesn't delete existing communication
+ * @param group
+ * @param communicationRelation
+ */
+export function modifyCommunicationRelationOrFail(
+    group: Group,
+    communicationRelation: GroupCommunicationRelation,
+) {
+  const headers = getHeaders();
+  let resDel = http.post(
+      `${rootUrl}/communication/group/${group.id}?direction=${communicationRelation}`,
+      null,
+      { headers },
+  );
+  check(resDel, {
+    "Change group communication relation": (r) => r.status === 200,
+  });
 }
 
 /**
