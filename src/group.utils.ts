@@ -102,26 +102,6 @@ export function addUsersToGroup(
   });
 }
 
-/**
- * Modify a communication group with the given communication direction. Doesn't delete existing communication
- * @param group
- * @param communicationRelation
- */
-export function modifyCommunicationRelationOrFail(
-  group: Group,
-  communicationRelation: GroupCommunicationRelation,
-) {
-  const headers = getHeaders();
-  let resDel = http.post(
-    `${rootUrl}/communication/group/${group.id}?direction=${communicationRelation}`,
-    null,
-    { headers },
-  );
-  check(resDel, {
-    "Change group communication relation": (r) => r.status === 200,
-  });
-}
-
 export function createShareBookMarkOrFail(
   request: ShareBookMarkCreationRequest,
 ) {
