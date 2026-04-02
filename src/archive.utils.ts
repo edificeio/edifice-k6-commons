@@ -1,18 +1,87 @@
 import http, { RefinedResponse, ResponseType } from "k6/http";
 import { getHeaders } from "./user.utils";
-import { check, fail } from "k6";
+import { bytes, check, fail } from "k6";
 //@ts-ignore
 import { FormData } from "https://jslib.k6.io/formdata/0.0.2/index.js";
+import {
+  AppImportAnalysis,
+  AppImportResult,
+  ImportAnalysisResult,
+} from "./models";
 
 const rootUrl = __ENV.ROOT_URL;
 
-export function launchExport(apps: string[]): RefinedResponse<ResponseType | undefined> {
+export const EXPORT_TIMEOUT = 30 * 60 * 1000; // 30 minutes
+
+export function importArchive(
+  fileData: bytes,
+): RefinedResponse<ResponseType | undefined> {
+  let headers = getHeaders();
+  const fd = new FormData();
+  const contentType = "application/zip";
+  //@ts-ignore
+  fd.append("file", http.file(fileData, "archive.zip", contentType));
+  //@ts-ignore
+  headers["Content-Type"] = "multipart/form-data; boundary=" + fd.boundary;
+  return http.post(`${rootUrl}/archive/import/upload`, fd.body(), { headers });
+}
+
+export function importArchiveOrFail(fileData: bytes): string {
+  const res = importArchive(fileData);
+  if (res.status !== 200) {
+    fail(`Failed to import archive. Response: ${res.status} - ${res.body}`);
+  }
+  return res.json("importId") as string;
+}
+
+export function analyzeImport(
+  importId: string,
+): RefinedResponse<ResponseType | undefined> {
+  return http.get(`${rootUrl}/archive/import/analyze/${importId}`, {
+    headers: getHeaders(),
+  });
+}
+
+export function analyzeImportOrFail(importId: string): ImportAnalysisResult {
+  const res = analyzeImport(importId);
+  if (res.status !== 200) {
+    fail(
+      `Failed to analyze import with id ${importId}. Response: ${res.status} - ${res.body}`,
+    );
+  }
+  return res.json() as ImportAnalysisResult;
+}
+
+export function launchImport(
+  importId: string,
+  details: { apps: Record<string, AppImportAnalysis> },
+): RefinedResponse<ResponseType | undefined> {
+  const payload = JSON.stringify(details);
+  return http.post(`${rootUrl}/archive/import/${importId}/launch`, payload, {
+    headers: getHeaders("application/json"),
+  });
+}
+
+export function launchImportOrFail(
+  importId: string,
+  details: { apps: Record<string, AppImportAnalysis> },
+): Record<string, AppImportResult> {
+  const res = launchImport(importId, details);
+  if (res.status !== 200) {
+    fail(
+      `Failed to launch import with id ${importId}. Response: ${res.status} - ${res.body}`,
+    );
+  }
+  return res.json() as Record<string, AppImportResult>;
+}
+
+export function launchExport(
+  apps: string[],
+): RefinedResponse<ResponseType | undefined> {
   const payload = JSON.stringify({ apps });
-  const res = http.post(
-    `${rootUrl}/archive/export`,
-    payload,
-    { headers: getHeaders("application/json") },
-  );
+  const res = http.post(`${rootUrl}/archive/export`, payload, {
+    headers: getHeaders("application/json"),
+  });
   return res;
 }
 
@@ -20,32 +89,58 @@ export function launchExportOrFail(apps: string[]): string {
   const res = launchExport(apps);
   const ok = check(res, {
     "should have exportId in response": (r) => r.json("exportId") !== undefined,
-    "should have message in response": (r) => r.json("message") === "export.in.progress",
+    "should have message in response": (r) =>
+      r.json("message") === "export.in.progress",
   });
   if (!ok) {
-    fail(`Failed to launch export for apps ${apps.join(", ")}. Response: ${res.status} - ${res.body}`);
+    fail(
+      `Failed to launch export for apps ${apps.join(", ")}. Response: ${res.status} - ${res.body}`,
+    );
   }
   return res.json("exportId") as string;
 }
 
-
-export function verifyExportFiles(exportId: string): RefinedResponse<ResponseType | undefined> {
-  const res = http.get(
-    `${rootUrl}/archive/export/verify/${exportId}`,
-    { headers: getHeaders() },
-  );
+export function verifyExportFiles(
+  exportId: string,
+): RefinedResponse<ResponseType | undefined> {
+  const res = http.get(`${rootUrl}/archive/export/verify/${exportId}`, {
+    headers: getHeaders(),
+  });
   return res;
 }
 
-export function downloadExportFile(exportId: string): RefinedResponse<ResponseType | undefined> {
-  const res = http.get(
-    `${rootUrl}/archive/export/${exportId}`,
-    { 
-      headers: getHeaders(),
-      responseType: 'binary', // Ensure we get binary data
-    },
-  );
+export function downloadExportFile(
+  exportId: string,
+): RefinedResponse<ResponseType | undefined> {
+  const res = http.get(`${rootUrl}/archive/export/${exportId}`, {
+    headers: getHeaders(),
+    responseType: "binary", // Ensure we get binary data
+  });
   return res;
+}
+
+export function duplicateResource(
+  application: string,
+  resourceId: string,
+): RefinedResponse<ResponseType | undefined> {
+  const payload = JSON.stringify({ application, resourceId });
+  const res = http.post(`${rootUrl}/archive/duplicate`, payload, {
+    headers: getHeaders("application/json"),
+  });
+  return res;
+}
+
+export function duplicateResourceOrFail(
+  application: string,
+  resourceId: string,
+): string {
+  const res = duplicateResource(application, resourceId);
+  if (res.status !== 200) {
+    fail(
+      `Failed to launch duplication for resource ${resourceId} in application ${application}. Response: ${res.status} - ${res.body}`,
+    );
+  }
+  return res.json("duplicateId") as string;
 }
 
 /**
@@ -89,14 +184,23 @@ function readUInt16LE(bytes: Uint8Array, offset: number): number {
  * Read a little-endian 32-bit integer from a byte array
  */
 function readUInt32LE(bytes: Uint8Array, offset: number): number {
-  return bytes[offset] | (bytes[offset + 1] << 8) | (bytes[offset + 2] << 16) | (bytes[offset + 3] << 24);
+  return (
+    bytes[offset] |
+    (bytes[offset + 1] << 8) |
+    (bytes[offset + 2] << 16) |
+    (bytes[offset + 3] << 24)
+  );
 }
 
 /**
  * Convert bytes to string (ASCII/UTF-8)
  */
-function bytesToString(bytes: Uint8Array, offset: number, length: number): string {
-  let str = '';
+function bytesToString(
+  bytes: Uint8Array,
+  offset: number,
+  length: number,
+): string {
+  let str = "";
   for (let i = 0; i < length; i++) {
     str += String.fromCharCode(bytes[offset + i]);
   }
@@ -115,7 +219,11 @@ function toUint8Array(body: any): Uint8Array {
     return new Uint8Array(body);
   }
   // Check if it's an array-like object with numeric indices
-  if (typeof body === 'object' && body.length !== undefined && typeof body[0] === 'number') {
+  if (
+    typeof body === "object" &&
+    body.length !== undefined &&
+    typeof body[0] === "number"
+  ) {
     const bytes = new Uint8Array(body.length);
     for (let i = 0; i < body.length; i++) {
       bytes[i] = body[i];
@@ -141,9 +249,14 @@ function findEndOfCentralDirectory(bytes: Uint8Array): number {
   // Search from the end of the file (EOCD is at the end)
   const maxSearchLength = Math.min(bytes.length, 65536 + 22); // Maximum comment length + EOCD size
   const searchStart = Math.max(0, bytes.length - maxSearchLength);
-  
+
   for (let i = bytes.length - 22; i >= searchStart; i--) {
-    if (bytes[i] === 0x50 && bytes[i + 1] === 0x4b && bytes[i + 2] === 0x05 && bytes[i + 3] === 0x06) {
+    if (
+      bytes[i] === 0x50 &&
+      bytes[i + 1] === 0x4b &&
+      bytes[i + 2] === 0x05 &&
+      bytes[i + 3] === 0x06
+    ) {
       return i;
     }
   }
@@ -164,7 +277,9 @@ export function parseZip(data: any): ZipArchive {
   // Find End of Central Directory record
   const eocdOffset = findEndOfCentralDirectory(bytes);
   if (eocdOffset === -1) {
-    throw new Error("Invalid ZIP file: End of Central Directory record not found");
+    throw new Error(
+      "Invalid ZIP file: End of Central Directory record not found",
+    );
   }
 
   // Parse EOCD
@@ -174,7 +289,9 @@ export function parseZip(data: any): ZipArchive {
 
   // Validate offsets
   if (centralDirOffset >= bytes.length) {
-    throw new Error(`Invalid ZIP: Central Directory offset (${centralDirOffset}) exceeds file size (${bytes.length})`);
+    throw new Error(
+      `Invalid ZIP: Central Directory offset (${centralDirOffset}) exceeds file size (${bytes.length})`,
+    );
   }
 
   // Parse Central Directory entries
@@ -182,13 +299,17 @@ export function parseZip(data: any): ZipArchive {
   for (let i = 0; i < totalEntries; i++) {
     // Check if we have enough bytes to read the signature
     if (offset + 4 > bytes.length) {
-      throw new Error(`Invalid ZIP: Not enough data for Central Directory entry ${i} at offset ${offset} (file size: ${bytes.length})`);
+      throw new Error(
+        `Invalid ZIP: Not enough data for Central Directory entry ${i} at offset ${offset} (file size: ${bytes.length})`,
+      );
     }
-    
+
     // Central Directory File Header signature: 0x02014b50
     const signature = readUInt32LE(bytes, offset);
     if (signature !== 0x02014b50) {
-      throw new Error(`Invalid Central Directory entry ${i} at offset ${offset}: expected signature 0x02014b50, got 0x${signature.toString(16).padStart(8, '0')}`);
+      throw new Error(
+        `Invalid Central Directory entry ${i} at offset ${offset}: expected signature 0x02014b50, got 0x${signature.toString(16).padStart(8, "0")}`,
+      );
     }
 
     const compressionMethod = readUInt16LE(bytes, offset + 10);
@@ -199,7 +320,7 @@ export function parseZip(data: any): ZipArchive {
     const fileCommentLength = readUInt16LE(bytes, offset + 32);
 
     const filename = bytesToString(bytes, offset + 46, filenameLength);
-    const isDirectory = filename.endsWith('/');
+    const isDirectory = filename.endsWith("/");
 
     if (isDirectory) {
       directoryCount++;
@@ -231,11 +352,14 @@ export function parseZip(data: any): ZipArchive {
  * @param filename - Name of the file to extract
  * @returns The file data as Uint8Array, or null if not found
  */
-export function extractFileFromZip(data: any, filename: string): Uint8Array | null {
+export function extractFileFromZip(
+  data: any,
+  filename: string,
+): Uint8Array | null {
   const bytes = toUint8Array(data);
   const archive = parseZip(data);
   const entry = archive.entries.get(filename);
-  
+
   if (!entry || entry.isDirectory) {
     return null;
   }
@@ -247,23 +371,25 @@ export function extractFileFromZip(data: any, filename: string): Uint8Array | nu
       const filenameLength = readUInt16LE(bytes, i + 26);
       const extraFieldLength = readUInt16LE(bytes, i + 28);
       const localFilename = bytesToString(bytes, i + 30, filenameLength);
-      
+
       if (localFilename === filename) {
         const compressionMethod = readUInt16LE(bytes, i + 8);
         const compressedSize = readUInt32LE(bytes, i + 18);
         const dataOffset = i + 30 + filenameLength + extraFieldLength;
-        
+
         if (compressionMethod === 0) {
           // No compression - return data as-is
           return bytes.slice(dataOffset, dataOffset + compressedSize);
         } else {
           // Compressed data - k6 doesn't have built-in decompression
-          throw new Error(`File "${filename}" uses compression method ${compressionMethod}. Decompression is not supported in k6. Use stored (uncompressed) files only.`);
+          throw new Error(
+            `File "${filename}" uses compression method ${compressionMethod}. Decompression is not supported in k6. Use stored (uncompressed) files only.`,
+          );
         }
       }
     }
   }
-  
+
   return null;
 }
 
@@ -290,26 +416,26 @@ export function getZipTree(archive: ZipArchive): string[] {
 export function validateZipStructure(
   archive: ZipArchive,
   expectedFiles: string[],
-  expectedDirs?: string[]
+  expectedDirs?: string[],
 ): { valid: boolean; missing: string[]; unexpected: string[] } {
   const missing: string[] = [];
   const unexpected: string[] = [];
   const allExpected = new Set([...expectedFiles, ...(expectedDirs || [])]);
-  
+
   // Check for missing files
   for (const expected of allExpected) {
     if (!archive.entries.has(expected)) {
       missing.push(expected);
     }
   }
-  
+
   // Check for unexpected files (optional - you can skip this if you want)
   for (const [filename] of archive.entries) {
     if (!allExpected.has(filename)) {
       unexpected.push(filename);
     }
   }
-  
+
   return {
     valid: missing.length === 0,
     missing,
