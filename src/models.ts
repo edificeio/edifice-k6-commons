@@ -235,8 +235,69 @@ export type Visible = {
   usedIn: string[];
 };
 
-
 export type LaunchExportResponse = {
   exportId: string;
   message: string;
+};
+
+export type ExplorerRequestDTO = {
+  application: string;
+  resourceType: string;
+  startIdx?: number;
+  pageSize?: number;
+  trashed?: boolean;
+  orderBy?: string;
+  folder?: string;
+};
+
+export type ExplorerResponseDTO = {
+  resources: ExplorerResourceDTO[];
+  pagination: {
+    startIdx: number;
+    pageSize: number;
+    maxIdx: number;
+  };
+};
+
+export type ExplorerResourceDTO = {
+  thumbnail: string;
+  creatorId: string;
+  creatorName: string;
+  description: string;
+  version: number;
+  createdAt: number;
+  application: string;
+  public: boolean;
+  updaterId: string;
+  assetId: string;
+  rights: string[];
+  updaterName: string;
+  name: string;
+  folderIds: string[];
+  resourceType: string;
+  trashed: boolean;
+  id: string;
+};
+
+export type ImportAnalysisResult = {
+  importId: string;
+  quota: number;
+  apps: Record<string, AppImportAnalysis>;
+};
+
+export type AppImportAnalysis = {
+  folder: string;
+  size: number;
+};
+
+export type AppImportResult = {
+  status?: "ok" | "error";
+  message?: string;
+  resourcesNumber?: string;
+  duplicatesNumber?: string;
+  errorsNumber?: string;
+  mainResourceName?: string;
+  mainRepository?: string;
+  resourcesIdsMap: Record<string, Record<string, string>>;
+  duplicatesNumberMap: Record<string, number>;
 };
