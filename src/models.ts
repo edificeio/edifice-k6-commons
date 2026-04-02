@@ -311,6 +311,21 @@ export type AppImportResult = {
   duplicatesNumberMap: Record<string, number>;
 };
 
+
+export type EventDTO = {
+  _id: string;
+  resource: string;
+  "event-type": string;
+  module: string;
+  date: number;
+  userId: string;
+  profil: string;
+  structures: string[];
+  classes: string[];
+  groups: string[];
+  referer: string;
+  sessionId: string;
+};
 export type HomePagePreference = {
   betaEnabled: boolean;
 };
