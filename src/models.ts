@@ -252,7 +252,6 @@ export type UserPreferences = {
   homePage?: HomePagePreference;
 };
 
-
 export type LaunchExportResponse = {
   exportId: string;
   message: string;
@@ -319,7 +318,6 @@ export type AppImportResult = {
   resourcesIdsMap: Record<string, Record<string, string>>;
   duplicatesNumberMap: Record<string, number>;
 };
-
 
 export type EventDTO = {
   _id: string;
