@@ -145,7 +145,6 @@ export function safelyRemoveCommunicationFromBothOrFail(group: Group) {
   });
 }
 
-
 /**
  * Search visibles
  * @returns The HTTP raw response
