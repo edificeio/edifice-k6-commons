@@ -333,10 +333,3 @@ export type EventDTO = {
   referer: string;
   sessionId: string;
 };
-export type HomePagePreference = {
-  betaEnabled: boolean;
-};
-
-export type UserPreferences = {
-  homePage?: HomePagePreference;
-};
