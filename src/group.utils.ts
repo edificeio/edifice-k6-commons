@@ -60,9 +60,9 @@ export function createBroadcastGroup(
 export function createGroup(groupName: string, school: Structure): Group {
   let group = getGroup(groupName, school);
   if (group) {
-    console.log("Group already existed");
+    console.debug("Group already existed");
   } else {
-    console.log("Creating group");
+    console.debug("Creating group");
     const headers = getHeaders();
     headers["content-type"] = "application/json";
     let payload = JSON.stringify({
@@ -116,9 +116,9 @@ export function modifyCommunicationRelationOrFail(
 export function createGroupOrFail(groupName: string, school: Structure): Group {
   let group = getGroup(groupName, school);
   if (group) {
-    console.log("Group already existed");
+    console.debug("Group already existed");
   } else {
-    console.log("Creating group");
+    console.debug("Creating group");
     const headers = getHeaders();
     headers["content-type"] = "application/json";
     let payload = JSON.stringify({
