@@ -135,10 +135,6 @@ export function checkGte(name: string, expected: number, actual: number) {
   return ok;
 }
 
-export function checkStatus(name: string, res: any, expectedStatus: number) {
-  return checkEquals(name, expectedStatus, res.status);
-}
-
 /**
  * @param name Name of the check, used for logging
  * @param array Array to test against the predicate
