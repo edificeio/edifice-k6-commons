@@ -1,17 +1,17 @@
 {
   "name": "edifice-k6-commons",
-  "version": "2.1.14-develop",
+  "version": "2.1.14-develop.1",
   "description": "Common functions for stress tests with K6.",
   "repository": {
     "type": "git",
-    "url": "git+ssh://git@github.com/juniorode/edifice-k6-commons.git"
+    "url": "git+ssh://git@github.com/edificeio/edifice-k6-commons.git"
   },
   "author": "Edifice",
   "license": "AGPL-3.0",
   "bugs": {
-    "url": "https://github.com/juniorode/edifice-k6-commons/issues"
+    "url": "https://github.com/edificeio/edifice-k6-commons/issues"
   },
-  "homepage": "https://github.com/juniorode/edifice-k6-commons#readme",
+  "homepage": "https://github.com/edificeio/edifice-k6-commons#readme",
   "packageManager": "pnpm@8.6.6",
   "engines": {
     "node": ">=18"
