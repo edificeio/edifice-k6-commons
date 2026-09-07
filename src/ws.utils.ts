@@ -1,6 +1,6 @@
 import http, { RefinedResponse, ResponseType } from "k6/http";
 import { getHeaders } from "./user.utils";
-import { check, bytes } from "k6";
+import { check, bytes, fail } from "k6";
 //@ts-ignore
 import { FormData } from "https://jslib.k6.io/formdata/0.0.2/index.js";
 import { WorkspaceFile } from "./models";
@@ -142,12 +142,106 @@ export function uploadZip(
 export function downloadFile(
   fileId: string,
   thumbnail: string = "",
+  responseType?: ResponseType,
 ): RefinedResponse<ResponseType | undefined> {
   let headers = getHeaders();
   const thumbnailQuery = thumbnail ? `?thumbnail=${thumbnail}` : "";
+  // Set only when asked for. k6 reads every key of the params object, so an
+  // explicit undefined fails the request outright — "undefined does not
+  // belong to ResponseType values", status 0 — rather than being ignored.
+  const params: any = { headers };
+  if (responseType) {
+    params.responseType = responseType;
+  }
   let res = http.get(
     `${rootUrl}/workspace/document/${fileId}${thumbnailQuery}`,
-    { headers },
+    params,
   );
   return res;
+}
+
+/** POST /workspace/folder — 201 with the created folder, fails otherwise. */
+export function createFolderOrFail(
+  name: string,
+  parentFolderId?: string,
+): string {
+  const body: Record<string, string> = { name };
+  if (parentFolderId) {
+    body.parentFolderId = parentFolderId;
+  }
+  const res = http.post(`${rootUrl}/workspace/folder`, body, {
+    headers: getHeaders(),
+  });
+  if (res.status !== 201) {
+    fail(`could not create folder ${name}: ${res.status} - ${res.body}`);
+  }
+  return (res.json() as any)._id;
+}
+
+/** POST /workspace/document/copy/:id/:folder — copies one document. */
+export function copyDocument(
+  id: string,
+  folderId: string,
+): RefinedResponse<ResponseType | undefined> {
+  return http.post(
+    `${rootUrl}/workspace/document/copy/${id}/${folderId}`,
+    null,
+    { headers: getHeaders() },
+  );
+}
+
+/** POST /workspace/documents/copy/:folder — copies several documents at once. */
+export function copyDocuments(
+  ids: string[],
+  folderId: string,
+): RefinedResponse<ResponseType | undefined> {
+  return http.post(
+    `${rootUrl}/workspace/documents/copy/${folderId}`,
+    JSON.stringify({ ids }),
+    { headers: getHeaders("application/json") },
+  );
+}
+
+/**
+ * The document ids of a copy response, which returns the created documents as
+ * an array.
+ */
+export function copiedIds(
+  res: RefinedResponse<ResponseType | undefined>,
+): string[] {
+  const body = res.json() as any;
+  if (!Array.isArray(body)) {
+    return [];
+  }
+  return body.filter((d: any) => !!d && !!d._id).map((d: any) => d._id);
+}
+
+/** DELETE /workspace/document/:id — deletes one document. */
+export function deleteDocument(
+  id: string,
+): RefinedResponse<ResponseType | undefined> {
+  return http.del(`${rootUrl}/workspace/document/${id}`, null, {
+    headers: getHeaders(),
+  });
+}
+
+/** DELETE /workspace/documents — deletes a whole batch of documents. */
+export function deleteDocuments(
+  ids: string[],
+): RefinedResponse<ResponseType | undefined> {
+  return http.del(`${rootUrl}/workspace/documents`, JSON.stringify({ ids }), {
+    headers: getHeaders("application/json"),
+  });
+}
+
+/**
+ * GET /workspace/document/base64/:id — the read that buffers the whole object
+ * rather than streaming it.
+ */
+export function getDocumentBase64(
+  id: string,
+): RefinedResponse<ResponseType | undefined> {
+  return http.get(`${rootUrl}/workspace/document/base64/${id}`, {
+    headers: getHeaders(),
+  });
 }

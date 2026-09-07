@@ -102,10 +102,18 @@ export function launchExportOrFail(apps: string[]): string {
 
 export function verifyExportFiles(
   exportId: string,
+  timeout?: string,
 ): RefinedResponse<ResponseType | undefined> {
-  const res = http.get(`${rootUrl}/archive/export/verify/${exportId}`, {
-    headers: getHeaders(),
-  });
+  // Set only when asked for, so the k6 default stands otherwise. It has to be
+  // conditional: an explicit undefined fails the request ("invalid timeout
+  // value"), it is not ignored. Worth passing when polling for readiness — an
+  // export that is merely not ready answers immediately, but one that died
+  // answers not at all, and the 60s default makes that one silent poll a minute.
+  const params: any = { headers: getHeaders() };
+  if (timeout) {
+    params.timeout = timeout;
+  }
+  const res = http.get(`${rootUrl}/archive/export/verify/${exportId}`, params);
   return res;
 }
 
