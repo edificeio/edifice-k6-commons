@@ -1,4 +1,4 @@
-import http from "k6/http";
+import http, { RefinedResponse } from "k6/http";
 import {
   authenticateWeb,
   getHeaders,
@@ -17,6 +17,7 @@ import { check, bytes, fail } from "k6";
 //@ts-ignore
 import { FormData } from "https://jslib.k6.io/formdata/0.0.2/index.js";
 import {
+  AAFFilesUploadRequest,
   ProfileGroup,
   Structure,
   StructureFlavour,
@@ -69,9 +70,32 @@ export function activateUsers(structure: Structure) {
     fail(`Cannot fetch users of structure ${structure.id} : ${res}`);
   }
   const users = JSON.parse(<string>res.body);
-  for (let i = 0; i < users.length; i++) {
-    const user = users[i];
-    activateUser(user);
+  const chunkSize = parseInt(__ENV.ACTIVATE_USERS_CHUNK_SIZE || "20");
+  const usersToActivate = users.filter((user: any) => user.code);
+  const oldSession = sessionHolder.session;
+  try {
+    for (let i = 0; i < usersToActivate.length; i += chunkSize) {
+      const chunk = usersToActivate.slice(i, i + chunkSize);
+      const batch = chunk.map((user: any) => {
+        const fd: any = {};
+        fd["login"] = user.login;
+        fd["activationCode"] = user.code;
+        fd["password"] = password;
+        fd["confirmPassword"] = password;
+        fd["acceptCGU"] = "true";
+        return ["POST", `${rootUrl}/auth/activation`, fd, { redirects: 0, headers: { Host: host } }];
+      });
+      const responses = http.batch(batch) as unknown as { status: number; body: string }[];
+      for (let j = 0; j < responses.length; j++) {
+        if (responses[j].status !== 302) {
+          fail(
+            `Could not activate user ${chunk[j].login} : ${responses[j].status} - ${responses[j].body}`,
+          );
+        }
+      }
+    }
+  } finally {
+    switchSession(oldSession);
   }
 }
 
@@ -667,4 +691,24 @@ export function applyCommRules(structures: Structure[]) {
   } else {
     console.log("... initialization failed");
   }
+}
+
+
+export function importAAFStructure(files: Record<string, string>): RefinedResponse<any> {
+  const request: AAFFilesUploadRequest = {
+    subPath: "test",
+    files: files,
+  };
+  const headers = getHeaders("application/json");
+  const res = http.post(
+    `${rootUrl}/directory/api/internal/upload-aaf`,
+    JSON.stringify(request),
+    { headers },
+  );
+  return res;
+}
+
+export function importAAFStructureOrFail(files: Record<string, string>) {
+  const res = importAAFStructure(files);
+  assertOk(res, "AAF structure should be imported");
 }
