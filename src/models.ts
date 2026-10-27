@@ -333,3 +333,8 @@ export type EventDTO = {
   referer: string;
   sessionId: string;
 };
+
+export type AAFFilesUploadRequest = {
+  subPath: string;
+  files: Record<string, string>;
+}
