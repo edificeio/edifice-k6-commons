@@ -196,6 +196,49 @@ export function addCommRuleToGroup(groupId: string, fromGroupIds: string[]) {
   }
 }
 
+/** Name used by the callers of {@link getProfileGroupOfStructure} -> profile of the group (`filter` of its node). */
+const PROFILE_OF_GROUP: Record<string, string> = {
+  teachers: "Teacher",
+  students: "Student",
+  relatives: "Relative",
+  guests: "Guest",
+  personnel: "Personnel",
+};
+
+/**
+ * @param structureId Id of the structure
+ * @returns The profile groups attached to the structure itself (not the ones of its classes), with their profile
+ * (`filter`, ex: "Teacher"). Empty when they cannot be fetched.
+ */
+export function getStructureProfileGroups(
+  structureId: string,
+): { id: string; filter: string }[] {
+  const res = http.get(
+    `${rootUrl}/directory/group/admin/list?structureId=${structureId}&type=ProfileGroup`,
+    { headers: getHeaders() },
+  );
+  if (res.status !== 200) {
+    return [];
+  }
+  return (<any[]>JSON.parse(<string>res.body)).filter(
+    (g) => g.subType === "StructureGroup",
+  );
+}
+
+/**
+ * @param groupName Name of a profile group as the tests write it in any language ("Teachers from group X.", "Parents du groupe X."...)
+ * @returns The profile this name designates, undefined when it does not designate one
+ */
+export function profileOfGroupName(groupName: string): string | undefined {
+  const name = groupName.toLowerCase();
+  if (/teacher|enseignant/.test(name)) return "Teacher";
+  if (/student|pupil|élève|eleve/.test(name)) return "Student";
+  if (/relative|parent/.test(name)) return "Relative";
+  if (/staff|personnel/.test(name)) return "Personnel";
+  if (/guest|invité/.test(name)) return "Guest";
+  return undefined;
+}
+
 export function getTeacherRole(structure: Structure) {
   return getProfileGroupOfStructure("teachers", structure);
 }
@@ -229,6 +272,18 @@ export function getProfileGroupOfStructure(
   structure: Structure,
 ): RoleOfStructure {
   const roles = getRolesOfStructure(structure.id);
+  // The wording of the name of a profile group depends on the platform ("X group teachers.", "Teachers from group X."...,
+  // and "parents" where the tests say "relatives") : the profile (filter) of the group does not.
+  const profile = PROFILE_OF_GROUP[profileGroupName];
+  if (profile) {
+    const ids = getStructureProfileGroups(structure.id)
+      .filter((g) => g.filter === profile)
+      .map((g) => g.id);
+    const found = roles.filter((role) => ids.indexOf(role.id) >= 0);
+    if (found.length > 0) {
+      return found[0];
+    }
+  }
   return roles.filter((role) => {
     const lowerName = role.name.toLowerCase();
     return (
