@@ -11,7 +11,9 @@ import {
   Role,
   assertOk,
   getRolesOfStructure,
+  getStructureProfileGroups,
   getUsersOfGroup,
+  profileOfGroupName,
 } from ".";
 import { check, bytes, fail } from "k6";
 //@ts-ignore
@@ -131,8 +133,21 @@ export function linkRoleToUsers(
   groupNames: string[],
 ) {
   const roles = getRolesOfStructure(structure.id);
+  // The names the tests give ("Teachers from group X.") are not the ones every platform uses ("X group teachers."):
+  // a name which designates a profile of this structure designates its profile group whatever its wording.
+  const profiles = groupNames
+    .filter((name) => name.indexOf(structure.name) >= 0)
+    .map(profileOfGroupName)
+    .filter((profile) => !!profile);
+  const profileGroupIds =
+    profiles.length > 0
+      ? getStructureProfileGroups(structure.id)
+          .filter((g) => profiles.indexOf(g.filter) >= 0)
+          .map((g) => g.id)
+      : [];
   const teacherRoless = roles.filter(
-    (role) => groupNames.indexOf(role.name) >= 0,
+    (role) =>
+      groupNames.indexOf(role.name) >= 0 || profileGroupIds.indexOf(role.id) >= 0,
   );
   for (let teacherRoles of teacherRoless) {
     if (teacherRoles.roles.indexOf(role.name) >= 0) {
@@ -291,9 +306,17 @@ export function createStructure(
       params,
     );
     if (res.status != 200) {
-      fail(`Could not create structure ${schoolName}`);
+      console.error(
+        `Structure ${schoolName} : ${res.status} ${res.error || ""} ${res.body}`,
+      );
+      fail(`Could not create structure ${schoolName} (${res.status})`);
     }
     ecoleAudience = getSchoolByName(schoolName);
+    if (!ecoleAudience) {
+      fail(
+        `Structure ${schoolName} has been imported but is not in the structures list`,
+      );
+    }
   }
   return ecoleAudience;
 }
