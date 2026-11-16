@@ -427,4 +427,4 @@ export type EventDTO = {
 export type AAFFilesUploadRequest = {
   subPath: string;
   files: Record<string, string>;
-}
+};

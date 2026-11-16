@@ -85,9 +85,17 @@ export function activateUsers(structure: Structure) {
         fd["password"] = password;
         fd["confirmPassword"] = password;
         fd["acceptCGU"] = "true";
-        return ["POST", `${rootUrl}/auth/activation`, fd, { redirects: 0, headers: { Host: host } }];
+        return [
+          "POST",
+          `${rootUrl}/auth/activation`,
+          fd,
+          { redirects: 0, headers: { Host: host } },
+        ];
       });
-      const responses = http.batch(batch) as unknown as { status: number; body: string }[];
+      const responses = http.batch(batch) as unknown as {
+        status: number;
+        body: string;
+      }[];
       for (let j = 0; j < responses.length; j++) {
         if (responses[j].status !== 302) {
           fail(
@@ -147,7 +155,8 @@ export function linkRoleToUsers(
       : [];
   const teacherRoless = roles.filter(
     (role) =>
-      groupNames.indexOf(role.name) >= 0 || profileGroupIds.indexOf(role.id) >= 0,
+      groupNames.indexOf(role.name) >= 0 ||
+      profileGroupIds.indexOf(role.id) >= 0,
   );
   for (let teacherRoles of teacherRoless) {
     if (teacherRoles.roles.indexOf(role.name) >= 0) {
@@ -716,8 +725,9 @@ export function applyCommRules(structures: Structure[]) {
   }
 }
 
-
-export function importAAFStructure(files: Record<string, string>): RefinedResponse<any> {
+export function importAAFStructure(
+  files: Record<string, string>,
+): RefinedResponse<any> {
   const request: AAFFilesUploadRequest = {
     subPath: "test",
     files: files,
