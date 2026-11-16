@@ -51,9 +51,11 @@ export function reinitLogins() {
     headers: getHeaders(),
   });
   if (!check(res, { "reinit logins should be ok": (r) => r.status === 200 })) {
-    console.error(`Reinit logins : ${res.status} ${res.error || ""} ${res.body}`);
+    console.error(
+      `Reinit logins : ${res.status} ${res.error || ""} ${res.body}`,
+    );
   }
-  if(delayWaitReinitLogin > 0) {
+  if (delayWaitReinitLogin > 0) {
     sleep(delayWaitReinitLogin);
   }
 }
