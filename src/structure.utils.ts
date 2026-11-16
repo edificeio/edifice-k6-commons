@@ -15,7 +15,7 @@ import {
   getUsersOfGroup,
   profileOfGroupName,
 } from ".";
-import { check, bytes, fail } from "k6";
+import { check, bytes, fail, sleep } from "k6";
 //@ts-ignore
 import { FormData } from "https://jslib.k6.io/formdata/0.0.2/index.js";
 import {
@@ -37,6 +37,26 @@ import sessionHolder from "./session.utils";
 const rootUrl = __ENV.ROOT_URL;
 const host = new URL(rootUrl).hostname;
 const password = __ENV.DEFAULT_PASSWORD || "password";
+/** Seconds to wait after asking for the refresh of the logins, so that every feeder instance has done it. */
+const delayWaitReinitLogin = parseFloat(__ENV.DELAY_WAIT_REINIT_LOGIN || "1");
+
+/**
+ * Asks every feeder instance to reload the logins of the platform, then waits DELAY_WAIT_REINIT_LOGIN seconds (1 by
+ * default). Each instance generates the logins of the imported users from its own cache : without this refresh, an
+ * instance which did not see the users created by another one gives an existing login, and the import fails.
+ * The refresh is broadcast without any acknowledgement, hence the wait.
+ */
+export function reinitLogins() {
+  const res = http.post(`${rootUrl}/directory/reinitLogins`, null, {
+    headers: getHeaders(),
+  });
+  if (!check(res, { "reinit logins should be ok": (r) => r.status === 200 })) {
+    console.error(`Reinit logins : ${res.status} ${res.error || ""} ${res.body}`);
+  }
+  if(delayWaitReinitLogin > 0) {
+    sleep(delayWaitReinitLogin);
+  }
+}
 
 export function getAllStructures(): Structure[] {
   let ecoles = http.get(`${rootUrl}/directory/structure/admin/list`, {
@@ -283,6 +303,7 @@ export function createStructure(
   if (ecoleAudience) {
     console.log("School already exists");
   } else {
+    reinitLogins();
     const fd = new FormData();
     fd.append("type", "CSV");
     fd.append("structureName", schoolName);
@@ -371,6 +392,7 @@ export function importUsers(
   structure: Structure,
   users: bytes | StructureInitData,
 ) {
+  reinitLogins();
   const fd = new FormData();
   fd.append("type", "CSV");
   fd.append("structureName", structure.name);
@@ -654,6 +676,7 @@ export function importCSVToStructure(
   users: bytes | StructureInitData,
   importParameters: StructureImportParameters,
 ) {
+  reinitLogins();
   const fd = new FormData();
   fd.append("type", "CSV");
   fd.append("structureName", structure.name);
