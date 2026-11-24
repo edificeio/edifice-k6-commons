@@ -39,6 +39,15 @@ const host = new URL(rootUrl).hostname;
 const password = __ENV.DEFAULT_PASSWORD || "password";
 /** Seconds to wait after asking for the refresh of the logins, so that every feeder instance has done it. */
 const delayWaitReinitLogin = parseFloat(__ENV.DELAY_WAIT_REINIT_LOGIN || "1");
+/**
+ * FORCE_RECREATE_SCHOOLS=true : the structures created by the helpers of this file get a suffix unique to the run,
+ * so that the structures of the previous runs (and their users, groups, shares and communication rules, modified by
+ * the tests) are never reused. The suffix is drawn once per VU : create the structures in setup() and hand them over
+ * to the tests, a lookup by name (getSchoolByName) is not suffixed.
+ */
+const forceRecreateSchools = __ENV.FORCE_RECREATE_SCHOOLS === "true";
+/** Suffix added to the names of the created structures when forceRecreateSchools, drawn on first use. */
+let schoolNameSuffix: string | undefined;
 /** Number of attempts to import a structure (an import can fail if the logins cache of the feeder is not up to date). */
 const maxStructureImportAttempts = Math.max(
   1,
@@ -63,6 +72,25 @@ export function reinitLogins() {
   if (delayWaitReinitLogin > 0) {
     sleep(delayWaitReinitLogin);
   }
+}
+
+/**
+ * @param name Name of a structure to create
+ * @returns The name of the structure to create : the supplied one, with a suffix unique to the run when
+ * FORCE_RECREATE_SCHOOLS=true (e.g. "Test communication rules - School1 #k6-mif3x2a4c")
+ */
+export function getStructureNameToCreate(name: string): string {
+  if (!forceRecreateSchools) {
+    return name;
+  }
+  if (!schoolNameSuffix) {
+    const random = Math.floor(Math.random() * 46656).toString(36);
+    schoolNameSuffix = `#k6-${Date.now().toString(36)}${random}`;
+    console.log(
+      `FORCE_RECREATE_SCHOOLS : the structures created get the suffix ${schoolNameSuffix}`,
+    );
+  }
+  return `${name} ${schoolNameSuffix}`;
 }
 
 export function getAllStructures(): Structure[] {
@@ -218,6 +246,7 @@ export function createEmptyStructure(
   structureName: string,
   hasApp: boolean,
 ): Structure {
+  structureName = getStructureNameToCreate(structureName);
   let structure = getSchoolByName(structureName);
   if (structure) {
     console.log(`Structure ${structureName} already exists`);
@@ -241,6 +270,7 @@ export function createEmptyStructureNoCheck(
   structureName: string,
   hasApp: boolean,
 ): any {
+  structureName = getStructureNameToCreate(structureName);
   const headers = getHeaders();
   headers["content-type"] = "application/json";
   const payload = JSON.stringify({
@@ -306,6 +336,7 @@ export function createStructure(
   schoolName: string,
   users: bytes | StructureInitData,
 ): Structure {
+  schoolName = getStructureNameToCreate(schoolName);
   let ecoleAudience = getSchoolByName(schoolName);
   if (ecoleAudience) {
     console.log("School already exists");
