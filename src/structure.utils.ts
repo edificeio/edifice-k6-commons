@@ -283,7 +283,7 @@ export function createDefaultStructure(
   structureName: string,
   flavour: StructureFlavour = "default",
 ): Structure {
-  const name = structureName || "General";
+  const name = structureName || __ENV.DEFAULT_SCHOOL_NAME || "General";
   authenticateWeb(__ENV.ADMC_LOGIN, __ENV.ADMC_PASSWORD);
   const baseUrl = `https://raw.githubusercontent.com/edificeio/edifice-k6-commons/develop/data/structure`;
   const teachersData: bytes = <bytes>(
