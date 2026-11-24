@@ -433,8 +433,12 @@ export function getProfileGroupsRelatedToGroup(
 /**
  * Reset all communication rules on a structure and apply default rules
  * @param school structure to reset
+ * @param expectedStatus HTTP status expected from the reset call (default 200, e.g. 401 for a non super-admin)
  */
-export function resetRulesAndCheck(school: Structure): void {
+export function resetRulesAndCheck(
+  school: Structure,
+  expectedStatus: number = 200,
+): void {
   const headers = getHeaders();
   headers["content-type"] = "application/json";
   let res = http.post(
@@ -445,6 +449,7 @@ export function resetRulesAndCheck(school: Structure): void {
     },
   );
   check(res, {
-    "reset communication rules should be ok": (r) => r.status == 200,
+    "reset communication rules should be ok": (r) =>
+      r.status === expectedStatus,
   });
 }
