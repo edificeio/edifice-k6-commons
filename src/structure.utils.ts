@@ -39,6 +39,11 @@ const host = new URL(rootUrl).hostname;
 const password = __ENV.DEFAULT_PASSWORD || "password";
 /** Seconds to wait after asking for the refresh of the logins, so that every feeder instance has done it. */
 const delayWaitReinitLogin = parseFloat(__ENV.DELAY_WAIT_REINIT_LOGIN || "1");
+/** Number of attempts to import a structure (an import can fail if the logins cache of the feeder is not up to date). */
+const maxStructureImportAttempts = Math.max(
+  1,
+  parseInt(__ENV.STRUCTURE_IMPORT_ATTEMPTS || "3"),
+);
 
 /**
  * Asks every feeder instance to reload the logins of the platform, then waits DELAY_WAIT_REINIT_LOGIN seconds (1 by
@@ -304,53 +309,99 @@ export function createStructure(
   let ecoleAudience = getSchoolByName(schoolName);
   if (ecoleAudience) {
     console.log("School already exists");
+    return ecoleAudience;
+  }
+  let teachers: bytes;
+  let students: bytes | undefined;
+  let responsables: bytes | undefined;
+  if ("teachers" in users) {
+    teachers = (<StructureInitData>users).teachers;
+    students = (<StructureInitData>users).students;
+    responsables = (<StructureInitData>users).responsables;
   } else {
+    teachers = <bytes>users;
+  }
+  for (let attempt = 1; attempt <= maxStructureImportAttempts; attempt++) {
     reinitLogins();
-    const fd = new FormData();
-    fd.append("type", "CSV");
-    fd.append("structureName", schoolName);
-    //@ts-ignore
-    let teachers: bytes;
-    let students: bytes | undefined;
-    let responsables: bytes | undefined;
-    if ("teachers" in users) {
-      teachers = (<StructureInitData>users).teachers;
-      students = (<StructureInitData>users).students;
-      responsables = (<StructureInitData>users).responsables;
-    } else {
-      teachers = <bytes>users;
+    if (attempt > 1) {
+      // Extra wait so that the (asynchronous) reload of the logins has time to complete on every feeder
+      sleep(delayWaitReinitLogin * Math.pow(2, attempt - 1));
     }
-    fd.append("Teacher", http.file(teachers, "enseignants.csv"));
-    if (students) {
-      fd.append("Student", http.file(students, "eleves.csv"));
-    }
-    if (responsables) {
-      fd.append("Relative", http.file(responsables, "responsables.csv"));
-    }
-    const headers = getHeaders();
-    //@ts-ignore
-    headers["Content-Type"] = "multipart/form-data; boundary=" + fd.boundary;
-    const params = { headers };
-    //@ts-ignore
-    const res = http.post(
-      `${rootUrl}/directory/wizard/import`,
-      fd.body(),
-      params,
+    const res = importStructureFiles(
+      schoolName,
+      teachers,
+      students,
+      responsables,
     );
-    if (res.status != 200) {
-      console.error(
-        `Structure ${schoolName} : ${res.status} ${res.error || ""} ${res.body}`,
-      );
-      fail(`Could not create structure ${schoolName} (${res.status})`);
+    if (res.status === 200) {
+      ecoleAudience = getSchoolByName(schoolName);
+      if (!ecoleAudience) {
+        fail(
+          `Structure ${schoolName} has been imported but is not in the structures list`,
+        );
+      }
+      return ecoleAudience;
     }
+    console.error(
+      `Structure ${schoolName} (attempt ${attempt}/${maxStructureImportAttempts}) : ${res.status} ${res.error || ""} ${res.body}`,
+    );
+    // The import runs in a single Neo4j transaction so a failure should leave nothing behind. Check it anyway
+    // so that we never silently return a structure with an incomplete set of users.
     ecoleAudience = getSchoolByName(schoolName);
-    if (!ecoleAudience) {
-      fail(
-        `Structure ${schoolName} has been imported but is not in the structures list`,
-      );
+    if (ecoleAudience) {
+      const expected = countCsvRows(teachers) + countCsvRows(students);
+      const actual = getUsersOfSchool(ecoleAudience).length;
+      if (actual < expected) {
+        fail(
+          `Structure ${schoolName} exists after a failed import but only has ${actual} users (at least ${expected} expected)`,
+        );
+      }
+      return ecoleAudience;
     }
   }
-  return ecoleAudience;
+  fail(`Could not create structure ${schoolName}`);
+}
+
+/**
+ * Sends the CSV files to the import wizard.
+ */
+function importStructureFiles(
+  schoolName: string,
+  teachers: bytes,
+  students: bytes | undefined,
+  responsables: bytes | undefined,
+): RefinedResponse<any> {
+  const fd = new FormData();
+  fd.append("type", "CSV");
+  fd.append("structureName", schoolName);
+  fd.append("Teacher", http.file(teachers, "enseignants.csv"));
+  if (students) {
+    fd.append("Student", http.file(students, "eleves.csv"));
+  }
+  if (responsables) {
+    fd.append("Relative", http.file(responsables, "responsables.csv"));
+  }
+  const headers = getHeaders();
+  //@ts-ignore
+  headers["Content-Type"] = "multipart/form-data; boundary=" + fd.boundary;
+  return http.post(`${rootUrl}/directory/wizard/import`, fd.body(), {
+    headers,
+  });
+}
+
+/**
+ * @returns the number of data rows (header excluded) of a CSV file
+ */
+function countCsvRows(data: bytes | undefined): number {
+  if (!data) {
+    return 0;
+  }
+  const content =
+    typeof data === "string"
+      ? data
+      : String.fromCharCode(...new Uint8Array(<any>data));
+  const lines = content.split(/\r?\n/).filter((l) => l.trim().length > 0);
+  return Math.max(0, lines.length - 1);
 }
 
 export function attachStructureAsChild(
