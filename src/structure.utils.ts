@@ -327,7 +327,12 @@ export function createStructure(
       // Extra wait so that the (asynchronous) reload of the logins has time to complete on every feeder
       sleep(delayWaitReinitLogin * Math.pow(2, attempt - 1));
     }
-    const res = importStructureFiles(schoolName, teachers, students, responsables);
+    const res = importStructureFiles(
+      schoolName,
+      teachers,
+      students,
+      responsables,
+    );
     if (res.status === 200) {
       ecoleAudience = getSchoolByName(schoolName);
       if (!ecoleAudience) {
