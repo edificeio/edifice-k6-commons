@@ -91,6 +91,7 @@ export const WS_MANAGER_SHARE = [
   "org-entcore-workspace-controllers-WorkspaceController|deleteDocument",
   "org-entcore-workspace-controllers-WorkspaceController|renameDocument",
   "org-entcore-workspace-controllers-WorkspaceController|moveDocuments",
+  "org-entcore-workspace-controllers-WorkspaceController|transferDocuments",
   "org-entcore-workspace-controllers-WorkspaceController|updateDocument",
 ];
 export const WS_READER_SHARE = [

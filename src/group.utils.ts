@@ -13,9 +13,13 @@ import {
   GroupCommunicationRelation,
   Group,
 } from ".";
-import { check, fail } from "k6";
+import { check, fail, sleep } from "k6";
 
 const rootUrl = __ENV.ROOT_URL;
+/** Seconds to wait after asking for the autolink of the manual groups, the feeder answering before the end of it. */
+const delayWaitLinkAutogroups = parseFloat(
+  __ENV.DELAY_WAIT_LINK_AUTOGROUPS || "2",
+);
 
 export const ADML_FILTER = "AdminLocal";
 
@@ -55,6 +59,29 @@ export function createBroadcastGroup(
     broadcastGroup = getBroadcastGroup(broadcastListName, school);
   }
   return broadcastGroup;
+}
+
+/**
+ * Asks the feeder to apply the autolink rules of every manual group (e.g. the broadcast groups created by
+ * {@link createBroadcastGroup}), then waits DELAY_WAIT_LINK_AUTOGROUPS seconds (2 by default).
+ * Those rules are only applied after an import (or by a cron) : call this function after the users or the
+ * structures targeted by a group have changed (e.g. after attaching a structure to the one of the group).
+ * The feeder answers without waiting for the end of the linking, hence the wait.
+ */
+export function linkAutogroups() {
+  const res = http.post(`${rootUrl}/directory/autogroups/link`, null, {
+    headers: getHeaders(),
+  });
+  if (
+    !check(res, { "link autogroups should be ok": (r) => r.status === 200 })
+  ) {
+    console.error(
+      `Link autogroups : ${res.status} ${res.error || ""} ${res.body}`,
+    );
+  }
+  if (delayWaitLinkAutogroups > 0) {
+    sleep(delayWaitLinkAutogroups);
+  }
 }
 
 export function createGroup(groupName: string, school: Structure): Group {
