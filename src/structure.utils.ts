@@ -119,7 +119,17 @@ export function getUsersOfSchool(school: Structure): UserInfo[] {
   return JSON.parse(<string>res.body);
 }
 
-export function activateUsers(structure: Structure) {
+/**
+ * Activates the users of a structure which are not activated yet.
+ * @param structure Structure whose users should be activated
+ * @param logoutAfterActivation true to close the sessions opened by the activations (slower). Needed when the
+ * rights of the activated users change afterwards (e.g. they are made ADML), otherwise the backend may still use
+ * these stale sessions to check their rights.
+ */
+export function activateUsers(
+  structure: Structure,
+  logoutAfterActivation: boolean = false,
+) {
   let res = http.get(`${rootUrl}/directory/structure/${structure.id}/users`, {
     headers: getHeaders(),
   });
@@ -158,13 +168,59 @@ export function activateUsers(structure: Structure) {
           );
         }
       }
+      if (logoutAfterActivation) {
+        closeActivationSessions(responses as unknown as RefinedResponse<any>[]);
+      }
     }
   } finally {
     switchSession(oldSession);
   }
 }
 
-export function activateUser(user: any) {
+/**
+ * Closes the sessions opened by the activations of users.
+ * An activation logs the user in, and this session keeps the rights the user had at that time. If the user is
+ * given new rights afterwards (an ADML function for instance), the backend may pick this stale session at random
+ * when it looks up the session of the user by its id (e.g. to check the rights of the caller of a user update),
+ * and silently deny the action.
+ * @param activationResponses Responses of the activation requests
+ */
+function closeActivationSessions(activationResponses: RefinedResponse<any>[]) {
+  const logouts: any[] = [];
+  for (const res of activationResponses) {
+    const sessionId = res.cookies?.["oneSessionId"]?.[0]?.value;
+    if (!sessionId) {
+      continue;
+    }
+    const xsrfToken = res.cookies?.["XSRF-TOKEN"]?.[0]?.value || "";
+    logouts.push([
+      "GET",
+      `${rootUrl}/auth/logout?callback=/`,
+      null,
+      {
+        redirects: 0,
+        headers: { "X-XSRF-TOKEN": xsrfToken },
+        cookies: {
+          oneSessionId: { value: sessionId, replace: true },
+          "XSRF-TOKEN": { value: xsrfToken, replace: true },
+        },
+      },
+    ]);
+  }
+  if (logouts.length > 0) {
+    http.batch(logouts);
+  }
+}
+
+/**
+ * Activates a user if not activated yet.
+ * @param user User to activate
+ * @param logoutAfterActivation true to close the session opened by the activation (see activateUsers)
+ */
+export function activateUser(
+  user: any,
+  logoutAfterActivation: boolean = false,
+) {
   if (user.code) {
     const oldSession = sessionHolder.session;
     try {
@@ -183,6 +239,9 @@ export function activateUser(user: any) {
         fail(
           `Could not activate user ${user.login} : ${res.status} - ${res.body}`,
         );
+      }
+      if (logoutAfterActivation) {
+        closeActivationSessions([res]);
       }
     } finally {
       switchSession(oldSession);
@@ -289,16 +348,19 @@ export function createEmptyStructureNoCheck(
  * Create a structure with a default set of teachers, parents and students
  * and activate the users.
  * @param structureName Name of the structure to create
+ * @param flavour The type of structure to create
+ * @param logoutAfterActivation true to close the sessions opened by the activations of the users (see activateUsers)
  * @returns The created structure
  */
 export function initStructure(
   structureName: string,
   flavour: StructureFlavour = "default",
+  logoutAfterActivation: boolean = false,
 ) {
   authenticateWeb(__ENV.ADMC_LOGIN, __ENV.ADMC_PASSWORD)!;
   const structure: Structure = createDefaultStructure(structureName, flavour);
   if (__ENV.SKIP_USERS_ACTIVATION !== "true") {
-    activateUsers(structure);
+    activateUsers(structure, logoutAfterActivation);
   }
   return structure;
 }
